@@ -261,6 +261,11 @@ func (p *azureRmFrameworkProvider) Schema(_ context.Context, _ provider.SchemaRe
 					listvalidator.SizeBetween(1, 1),
 				},
 				NestedObject: schema.NestedBlockObject{
+					Attributes: map[string]schema.Attribute{
+						"preflight_enabled": schema.BoolAttribute{
+							Optional: true,
+						},
+					},
 					Blocks: map[string]schema.Block{
 						"api_management": schema.ListNestedBlock{
 							NestedObject: schema.NestedBlockObject{

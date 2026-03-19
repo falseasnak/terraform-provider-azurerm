@@ -4,6 +4,7 @@
 package features
 
 type UserFeatures struct {
+	PreflightEnabled         bool
 	ApiManagement            ApiManagementFeatures
 	AppConfiguration         AppConfigurationFeatures
 	ApplicationInsights      ApplicationInsightFeatures

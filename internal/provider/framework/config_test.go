@@ -139,8 +139,8 @@ func TestProviderConfig_LoadDefault(t *testing.T) {
 		t.Errorf("expected key_vault.recover_soft_deleted_hsm_keys to be true")
 	}
 
-	if !features.LogAnalyticsWorkspace.PermanentlyDeleteOnDestroy {
-		t.Errorf("expected log_analytics_workspace.permanently_delete_on_destroy to be true")
+	if features.LogAnalyticsWorkspace.PermanentlyDeleteOnDestroy {
+		t.Errorf("expected log_analytics_workspace.permanently_delete_on_destroy to be false")
 	}
 
 	if features.TemplateDeployment.DeleteNestedItemsDuringDeletion {
@@ -338,6 +338,7 @@ func defaultFeaturesList() types.List {
 	databricksWorkspaceList, _ := basetypes.NewListValue(types.ObjectType{}.WithAttributeTypes(DatabricksWorkspaceAttributes), []attr.Value{databricksWorkspace})
 
 	fData, d := basetypes.NewObjectValue(FeaturesAttributes, map[string]attr.Value{
+		"preflight_enabled":          basetypes.NewBoolValue(false),
 		"api_management":             apiManagementList,
 		"app_configuration":          appConfigurationList,
 		"application_insights":       applicationInsightsList,

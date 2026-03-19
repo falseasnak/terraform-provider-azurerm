@@ -15,6 +15,12 @@ func schemaFeatures(supportLegacyTestSuite bool) *pluginsdk.Schema {
 	// NOTE: if there's only one nested field these want to be Required (since there's no point
 	//       specifying the block otherwise) - however for 2+ they should be optional
 	featuresMap := map[string]*pluginsdk.Schema{
+		"preflight_enabled": {
+			Type:     pluginsdk.TypeBool,
+			Optional: true,
+			Default:  false,
+		},
+
 		// lintignore:XS003
 		"api_management": {
 			Type:     pluginsdk.TypeList,
@@ -472,6 +478,11 @@ func expandFeatures(input []interface{}) features.UserFeatures {
 	}
 
 	val := input[0].(map[string]interface{})
+
+	if v, ok := val["preflight_enabled"]; ok {
+		preflightEnabled := v.(bool)
+		featuresMap.PreflightEnabled = preflightEnabled
+	}
 
 	if raw, ok := val["api_management"]; ok {
 		items := raw.([]interface{})

@@ -44,6 +44,7 @@ type ProviderModel struct {
 }
 
 type Features struct {
+	PreflightEnabled         types.Bool `tfsdk:"preflight_enabled"`
 	APIManagement            types.List `tfsdk:"api_management"`
 	AppConfiguration         types.List `tfsdk:"app_configuration"`
 	ApplicationInsights      types.List `tfsdk:"application_insights"`
@@ -68,6 +69,7 @@ type Features struct {
 // FeaturesAttributes and the other block attribute vars are required for unit testing on the Load func
 // New features blocks and attributes must be added here and to unit tests.
 var FeaturesAttributes = map[string]attr.Type{
+	"preflight_enabled":          types.BoolType,
 	"api_management":             types.ListType{}.WithElementType(types.ObjectType{}.WithAttributeTypes(APIManagementAttributes)),
 	"app_configuration":          types.ListType{}.WithElementType(types.ObjectType{}.WithAttributeTypes(AppConfigurationAttributes)),
 	"application_insights":       types.ListType{}.WithElementType(types.ObjectType{}.WithAttributeTypes(ApplicationInsightsAttributes)),
