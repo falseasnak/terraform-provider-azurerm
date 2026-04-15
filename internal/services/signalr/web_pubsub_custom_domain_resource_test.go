@@ -173,7 +173,7 @@ resource "azurerm_web_pubsub_custom_certificate" "test" {
 }
 
 resource "azurerm_web_pubsub_custom_domain" "test" {
-  name                             = "webPubsubcustom-domain-%s"
+  name                             = "webpubsubcustom-domain-%s"
   web_pubsub_id                    = azurerm_web_pubsub.test.id
   domain_name                      = "wps.${azurerm_dns_zone.test.name}"
   web_pubsub_custom_certificate_id = azurerm_web_pubsub_custom_certificate.test.id
