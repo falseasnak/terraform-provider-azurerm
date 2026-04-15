@@ -34,6 +34,9 @@ jobs:
           echo "Every new resource must include a *_resource_list.go file and be"
           echo "registered in the service's ListResources() method."
           echo ""
+          echo "For detailed instructions, see the contributor guide:"
+          echo "  https://github.com/hashicorp/terraform-provider-azurerm/blob/main/contributing/topics/guide-list-resource.md"
+          echo ""
           echo "If this resource cannot support listing, add the 'allow-without-list'"
           echo "label to this pull request."
   save-artifacts-on-fail:
