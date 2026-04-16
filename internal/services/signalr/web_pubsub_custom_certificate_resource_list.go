@@ -33,14 +33,14 @@ func (r CustomCertWebPubsubListResource) ResourceFunc() *pluginsdk.Resource {
 	wrapper := sdk.NewResourceWrapper(CustomCertWebPubsubResource{})
 	resource, err := wrapper.Resource()
 	if err != nil {
-		panic(fmt.Sprintf("building resource schema for `%s`: %+v", "azurerm_web_pubsub_custom_certificate", err))
+		panic(fmt.Sprintf("building resource schema for `%s`: %+v", webPubsubCustomCertificateResourceType, err))
 	}
 
 	return resource
 }
 
 func (r CustomCertWebPubsubListResource) Metadata(_ context.Context, _ resource.MetadataRequest, response *resource.MetadataResponse) {
-	response.TypeName = "azurerm_web_pubsub_custom_certificate"
+	response.TypeName = webPubsubCustomCertificateResourceType
 }
 
 func (r CustomCertWebPubsubListResource) ListResourceConfigSchema(_ context.Context, _ list.ListResourceSchemaRequest, response *list.ListResourceSchemaResponse) {
@@ -68,13 +68,13 @@ func (r CustomCertWebPubsubListResource) List(ctx context.Context, request list.
 
 	webPubsubId, err := webpubsub.ParseWebPubSubID(data.WebPubsubId.ValueString())
 	if err != nil {
-		sdk.SetResponseErrorDiagnostic(stream, fmt.Sprintf("parsing Web PubSub ID for `%s`", "azurerm_web_pubsub_custom_certificate"), err)
+		sdk.SetResponseErrorDiagnostic(stream, fmt.Sprintf("parsing Web PubSub ID for `%s`", webPubsubCustomCertificateResourceType), err)
 		return
 	}
 
 	resp, err := client.CustomCertificatesListComplete(ctx, *webPubsubId)
 	if err != nil {
-		sdk.SetResponseErrorDiagnostic(stream, fmt.Sprintf("listing `%s`", "azurerm_web_pubsub_custom_certificate"), err)
+		sdk.SetResponseErrorDiagnostic(stream, fmt.Sprintf("listing `%s`", webPubsubCustomCertificateResourceType), err)
 		return
 	}
 

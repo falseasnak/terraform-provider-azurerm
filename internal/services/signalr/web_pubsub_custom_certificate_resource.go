@@ -29,6 +29,8 @@ type CustomCertWebPubsubModel struct {
 	CertificateVersion string `tfschema:"certificate_version"`
 }
 
+const webPubsubCustomCertificateResourceType = "azurerm_web_pubsub_custom_certificate"
+
 type CustomCertWebPubsubResource struct{}
 
 var (
@@ -79,7 +81,7 @@ func (r CustomCertWebPubsubResource) ModelObject() interface{} {
 }
 
 func (r CustomCertWebPubsubResource) ResourceType() string {
-	return "azurerm_web_pubsub_custom_certificate"
+	return webPubsubCustomCertificateResourceType
 }
 
 func (r CustomCertWebPubsubResource) Create() sdk.ResourceFunc {
