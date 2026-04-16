@@ -83,7 +83,7 @@ provider "azurerm" {
 
 resource "azurerm_cost_anomaly_alert" "test" {
   name            = "-acctest-%d"
-  display_name    = "acctest-aa-%d"
+  display_name    = "costview-%d"
   email_subject   = "Hi"
   email_addresses = ["test@test.com", "test@hashicorp.developer"]
   message         = "Oops, cost anomaly"
@@ -101,7 +101,7 @@ data "azurerm_subscription" "test" {}
 
 resource "azurerm_cost_anomaly_alert" "test" {
   name            = "-acctest-%d"
-  display_name    = "acctest-aa-%d"
+  display_name    = "costview-%d"
   subscription_id = data.azurerm_subscription.test.id
   email_subject   = "Hi"
   email_addresses = ["test@test.com", "test@hashicorp.developer"]
@@ -133,7 +133,7 @@ provider "azurerm" {
 
 resource "azurerm_cost_anomaly_alert" "test" {
   name            = "-acctest-%d"
-  display_name    = "acctest upd %d"
+  display_name    = "costview-upd-%d"
   email_subject   = "Hi you!"
   email_addresses = ["tester@test.com", "test2@hashicorp.developer"]
   message         = "An updated cost anomaly for you"
@@ -149,7 +149,7 @@ provider "azurerm" {
 
 resource "azurerm_cost_anomaly_alert" "test" {
   name               = "-acctest-%d"
-  display_name       = "acctest-aa-%d"
+  display_name       = "costview-%d"
   email_subject      = "Hi"
   email_addresses    = ["test@test.com", "test@hashicorp.developer"]
   notification_email = "othertest@hashicorp.developer"
