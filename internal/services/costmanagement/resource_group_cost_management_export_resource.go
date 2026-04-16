@@ -4,6 +4,14 @@
 package costmanagement
 
 import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
+	"github.com/hashicorp/go-azure-helpers/lang/response"
+	"github.com/hashicorp/go-azure-sdk/resource-manager/costmanagement/2023-08-01/exports"
+	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/services/costmanagement/validate"
 	resourceValidate "github.com/hashicorp/terraform-provider-azurerm/internal/services/resource/validate"
@@ -13,6 +21,18 @@ import (
 
 type ResourceGroupCostManagementExportResource struct {
 	base costManagementExportBaseResource
+}
+
+type ResourceGroupCostManagementExportModel struct {
+	Name                      string                                         `tfschema:"name"`
+	ResourceGroupId           string                                         `tfschema:"resource_group_id"`
+	Active                    bool                                           `tfschema:"active"`
+	RecurrenceType            string                                         `tfschema:"recurrence_type"`
+	RecurrencePeriodStartDate string                                         `tfschema:"recurrence_period_start_date"`
+	RecurrencePeriodEndDate   string                                         `tfschema:"recurrence_period_end_date"`
+	FileFormat                string                                         `tfschema:"file_format"`
+	ExportDataStorageLocation []CostManagementExportDataStorageLocationModel `tfschema:"export_data_storage_location"`
+	ExportDataOptions         []CostManagementExportDataOptionsModel         `tfschema:"export_data_options"`
 }
 
 var _ sdk.Resource = ResourceGroupCostManagementExportResource{}
@@ -40,7 +60,7 @@ func (r ResourceGroupCostManagementExportResource) Attributes() map[string]*plug
 }
 
 func (r ResourceGroupCostManagementExportResource) ModelObject() interface{} {
-	return nil
+	return &ResourceGroupCostManagementExportModel{}
 }
 
 func (r ResourceGroupCostManagementExportResource) ResourceType() string {
@@ -52,11 +72,118 @@ func (r ResourceGroupCostManagementExportResource) IDValidationFunc() pluginsdk.
 }
 
 func (r ResourceGroupCostManagementExportResource) Create() sdk.ResourceFunc {
-	return r.base.createFunc(r.ResourceType(), "resource_group_id")
+	return sdk.ResourceFunc{
+		Timeout: 30 * time.Minute,
+		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
+			client := metadata.Client.CostManagement.ExportClient
+
+			var config ResourceGroupCostManagementExportModel
+			if err := metadata.Decode(&config); err != nil {
+				return fmt.Errorf("decoding: %+v", err)
+			}
+
+			id := exports.NewScopedExportID(config.ResourceGroupId, config.Name)
+
+			var opts exports.GetOperationOptions
+			existing, err := client.Get(ctx, id, opts)
+			if err != nil {
+				if !response.WasNotFound(existing.HttpResponse) {
+					return fmt.Errorf("checking for presence of existing %s: %+v", id, err)
+				}
+			}
+
+			if !response.WasNotFound(existing.HttpResponse) {
+				return tf.ImportAsExistsError(r.ResourceType(), id.ID())
+			}
+
+			deliveryInfo, err := expandExportDataStorageLocationFromModel(config.ExportDataStorageLocation)
+			if err != nil {
+				return fmt.Errorf("expanding `export_data_storage_location`: %+v", err)
+			}
+
+			status := exports.StatusTypeActive
+			if !config.Active {
+				status = exports.StatusTypeInactive
+			}
+
+			format := exports.FormatType(config.FileFormat)
+			recurrenceType := exports.RecurrenceType(config.RecurrenceType)
+
+			props := exports.Export{
+				Properties: &exports.ExportProperties{
+					Schedule: &exports.ExportSchedule{
+						Recurrence: &recurrenceType,
+						RecurrencePeriod: &exports.ExportRecurrencePeriod{
+							From: config.RecurrencePeriodStartDate,
+							To:   pointer.To(config.RecurrencePeriodEndDate),
+						},
+						Status: &status,
+					},
+					DeliveryInfo: *deliveryInfo,
+					Format:       &format,
+					Definition:   *expandExportDataOptionsFromModel(config.ExportDataOptions),
+				},
+			}
+
+			if _, err = client.CreateOrUpdate(ctx, id, props); err != nil {
+				return fmt.Errorf("creating %s: %+v", id, err)
+			}
+
+			metadata.SetID(id)
+			return nil
+		},
+	}
 }
 
 func (r ResourceGroupCostManagementExportResource) Read() sdk.ResourceFunc {
-	return r.base.readFunc("resource_group_id")
+	return sdk.ResourceFunc{
+		Timeout: 5 * time.Minute,
+		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
+			client := metadata.Client.CostManagement.ExportClient
+
+			id, err := exports.ParseScopedExportID(metadata.ResourceData.Id())
+			if err != nil {
+				return err
+			}
+
+			var opts exports.GetOperationOptions
+			resp, err := client.Get(ctx, *id, opts)
+			if err != nil {
+				if response.WasNotFound(resp.HttpResponse) {
+					return metadata.MarkAsGone(id)
+				}
+				return fmt.Errorf("reading %s: %+v", *id, err)
+			}
+
+			state := ResourceGroupCostManagementExportModel{
+				Name:            id.ExportName,
+				ResourceGroupId: id.Scope,
+			}
+
+			if model := resp.Model; model != nil {
+				if props := model.Properties; props != nil {
+					if schedule := props.Schedule; schedule != nil {
+						if recurrencePeriod := schedule.RecurrencePeriod; recurrencePeriod != nil {
+							state.RecurrencePeriodStartDate = recurrencePeriod.From
+							state.RecurrencePeriodEndDate = pointer.From(recurrencePeriod.To)
+						}
+						state.Active = *schedule.Status == exports.StatusTypeActive
+						state.RecurrenceType = string(pointer.From(schedule.Recurrence))
+					}
+
+					storageLocation, err := flattenExportDataStorageLocationToModel(&props.DeliveryInfo)
+					if err != nil {
+						return fmt.Errorf("flattening `export_data_storage_location`: %+v", err)
+					}
+					state.ExportDataStorageLocation = storageLocation
+					state.ExportDataOptions = flattenExportDataOptionsToModel(&props.Definition)
+					state.FileFormat = string(pointer.From(props.Format))
+				}
+			}
+
+			return metadata.Encode(&state)
+		},
+	}
 }
 
 func (r ResourceGroupCostManagementExportResource) Delete() sdk.ResourceFunc {
@@ -64,5 +191,69 @@ func (r ResourceGroupCostManagementExportResource) Delete() sdk.ResourceFunc {
 }
 
 func (r ResourceGroupCostManagementExportResource) Update() sdk.ResourceFunc {
-	return r.base.updateFunc()
+	return sdk.ResourceFunc{
+		Timeout: 30 * time.Minute,
+		Func: func(ctx context.Context, metadata sdk.ResourceMetaData) error {
+			client := metadata.Client.CostManagement.ExportClient
+
+			id, err := exports.ParseScopedExportID(metadata.ResourceData.Id())
+			if err != nil {
+				return err
+			}
+
+			var config ResourceGroupCostManagementExportModel
+			if err := metadata.Decode(&config); err != nil {
+				return fmt.Errorf("decoding: %+v", err)
+			}
+
+			// Update operation requires latest eTag to be set in the request.
+			var opts exports.GetOperationOptions
+			resp, err := client.Get(ctx, *id, opts)
+			if err != nil {
+				return fmt.Errorf("reading %s: %+v", *id, err)
+			}
+
+			if model := resp.Model; model != nil {
+				if model.ETag == nil {
+					return fmt.Errorf("add %s: etag was nil", *id)
+				}
+			}
+
+			deliveryInfo, err := expandExportDataStorageLocationFromModel(config.ExportDataStorageLocation)
+			if err != nil {
+				return fmt.Errorf("expanding `export_data_storage_location`: %+v", err)
+			}
+
+			status := exports.StatusTypeActive
+			if !config.Active {
+				status = exports.StatusTypeInactive
+			}
+
+			format := exports.FormatType(config.FileFormat)
+			recurrenceType := exports.RecurrenceType(config.RecurrenceType)
+
+			props := exports.Export{
+				ETag: resp.Model.ETag,
+				Properties: &exports.ExportProperties{
+					Schedule: &exports.ExportSchedule{
+						Recurrence: &recurrenceType,
+						RecurrencePeriod: &exports.ExportRecurrencePeriod{
+							From: config.RecurrencePeriodStartDate,
+							To:   pointer.To(config.RecurrencePeriodEndDate),
+						},
+						Status: &status,
+					},
+					DeliveryInfo: *deliveryInfo,
+					Format:       &format,
+					Definition:   *expandExportDataOptionsFromModel(config.ExportDataOptions),
+				},
+			}
+
+			if _, err = client.CreateOrUpdate(ctx, *id, props); err != nil {
+				return fmt.Errorf("updating %s: %+v", *id, err)
+			}
+
+			return nil
+		},
+	}
 }
