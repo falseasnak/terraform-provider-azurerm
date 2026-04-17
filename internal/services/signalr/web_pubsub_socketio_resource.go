@@ -3,6 +3,8 @@
 
 package signalr
 
+//go:generate go run ../../tools/generator-tests resourceidentity -resource-name web_pubsub_socketio -service-package-name signalr -properties "name,resource_group_name"
+
 import (
 	"context"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/identity"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/webpubsub/2024-03-01/webpubsub"
 	"github.com/hashicorp/terraform-provider-azurerm/helpers/tf"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/locks"
@@ -57,10 +60,17 @@ type WebPubSubSocketIOSkuModel struct {
 	Capacity int64  `tfschema:"capacity"`
 }
 
+const webPubSubSocketIOResourceType = "azurerm_web_pubsub_socketio"
+
 var (
 	_ sdk.ResourceWithUpdate        = WebPubSubSocketIOResource{}
 	_ sdk.ResourceWithCustomizeDiff = WebPubSubSocketIOResource{}
+	_ sdk.ResourceWithIdentity      = WebPubSubSocketIOResource{}
 )
+
+func (w WebPubSubSocketIOResource) Identity() resourceids.ResourceId {
+	return &webpubsub.WebPubSubId{}
+}
 
 func (w WebPubSubSocketIOResource) Arguments() map[string]*pluginsdk.Schema {
 	return map[string]*pluginsdk.Schema{
@@ -260,7 +270,7 @@ func (w WebPubSubSocketIOResource) ModelObject() interface{} {
 }
 
 func (w WebPubSubSocketIOResource) ResourceType() string {
-	return "azurerm_web_pubsub_socketio"
+	return webPubSubSocketIOResourceType
 }
 
 func (w WebPubSubSocketIOResource) Create() sdk.ResourceFunc {
@@ -286,7 +296,7 @@ func (w WebPubSubSocketIOResource) Create() sdk.ResourceFunc {
 			}
 
 			if !response.WasNotFound(existing.HttpResponse) {
-				return tf.ImportAsExistsError("azurerm_web_pubsub_socketio", id.ID())
+				return tf.ImportAsExistsError(webPubSubSocketIOResourceType, id.ID())
 			}
 
 			expandedIdentity, err := identity.ExpandSystemOrUserAssignedMapFromModel(config.Identity)
@@ -319,6 +329,9 @@ func (w WebPubSubSocketIOResource) Create() sdk.ResourceFunc {
 			}
 
 			metadata.SetID(id)
+			if err := pluginsdk.SetResourceIdentityData(metadata.ResourceData, &id); err != nil {
+				return err
+			}
 			return nil
 		},
 	}
@@ -349,62 +362,70 @@ func (w WebPubSubSocketIOResource) Read() sdk.ResourceFunc {
 				return fmt.Errorf("listing keys for %s: %+v", *id, err)
 			}
 
-			state := WebPubSubSocketIOResourceModel{
-				Name:              id.WebPubSubName,
-				ResourceGroupName: id.ResourceGroupName,
-			}
-
-			if model := resp.Model; model != nil {
-				state.Location = location.Normalize(model.Location)
-				state.Tags = pointer.From(model.Tags)
-
-				flattenedIdentity, err := identity.FlattenSystemOrUserAssignedMapToModel(model.Identity)
-				if err != nil {
-					return fmt.Errorf("flattening `identity`: %+v", err)
-				}
-				state.Identity = pointer.From(flattenedIdentity)
-
-				if sku := model.Sku; sku != nil {
-					state.Sku = flattenWebPubSubSocketIOSkuToModel(sku)
-				}
-
-				if props := model.Properties; props != nil {
-					liveTrace := flattenLiveTraceConfigToMap(props.LiveTraceConfiguration)
-
-					state.AADAuthEnabled = !pointer.From(props.DisableAadAuth)
-					state.ExternalIP = pointer.From(props.ExternalIP)
-					state.HostName = pointer.From(props.HostName)
-					state.PublicPort = pointer.From(props.PublicPort)
-					state.ServerPort = pointer.From(props.ServerPort)
-
-					state.LiveTraceEnabled = liveTrace["enabled"]
-					state.LiveTraceConnectivityLogsEnabled = liveTrace["connectivityLogsEnabled"]
-					state.LiveTraceHttpRequestLogsEnabled = liveTrace["httpLogsEnabled"]
-					state.LiveTraceMessagingLogsEnabled = liveTrace["messagingLogsEnabled"]
-
-					state.LocalAuthEnabled = !pointer.From(props.DisableLocalAuth)
-					state.PublicNetworkAccess = pointer.From(props.PublicNetworkAccess)
-
-					if socketio := props.SocketIO; socketio != nil {
-						state.ServiceMode = pointer.From(socketio.ServiceMode)
-					}
-
-					if tls := props.Tls; tls != nil {
-						state.TlsClientCertEnabled = pointer.From(tls.ClientCertEnabled)
-					}
-				}
-			}
-
-			if keyModel := keys.Model; keyModel != nil {
-				state.PrimaryAccessKey = pointer.From(keyModel.PrimaryKey)
-				state.PrimaryConnectionString = pointer.From(keyModel.PrimaryConnectionString)
-				state.SecondaryAccessKey = pointer.From(keyModel.SecondaryKey)
-				state.SecondaryConnectionString = pointer.From(keyModel.SecondaryConnectionString)
-			}
-
-			return metadata.Encode(&state)
+			return w.flatten(metadata, id, resp.Model, keys.Model)
 		},
 	}
+}
+
+func (w WebPubSubSocketIOResource) flatten(metadata sdk.ResourceMetaData, id *webpubsub.WebPubSubId, model *webpubsub.WebPubSubResource, keyModel *webpubsub.WebPubSubKeys) error {
+	state := WebPubSubSocketIOResourceModel{
+		Name:              id.WebPubSubName,
+		ResourceGroupName: id.ResourceGroupName,
+	}
+
+	if model != nil {
+		state.Location = location.Normalize(model.Location)
+		state.Tags = pointer.From(model.Tags)
+
+		flattenedIdentity, err := identity.FlattenSystemOrUserAssignedMapToModel(model.Identity)
+		if err != nil {
+			return fmt.Errorf("flattening `identity`: %+v", err)
+		}
+		state.Identity = pointer.From(flattenedIdentity)
+
+		if sku := model.Sku; sku != nil {
+			state.Sku = flattenWebPubSubSocketIOSkuToModel(sku)
+		}
+
+		if props := model.Properties; props != nil {
+			liveTrace := flattenLiveTraceConfigToMap(props.LiveTraceConfiguration)
+
+			state.AADAuthEnabled = !pointer.From(props.DisableAadAuth)
+			state.ExternalIP = pointer.From(props.ExternalIP)
+			state.HostName = pointer.From(props.HostName)
+			state.PublicPort = pointer.From(props.PublicPort)
+			state.ServerPort = pointer.From(props.ServerPort)
+
+			state.LiveTraceEnabled = liveTrace["enabled"]
+			state.LiveTraceConnectivityLogsEnabled = liveTrace["connectivityLogsEnabled"]
+			state.LiveTraceHttpRequestLogsEnabled = liveTrace["httpLogsEnabled"]
+			state.LiveTraceMessagingLogsEnabled = liveTrace["messagingLogsEnabled"]
+
+			state.LocalAuthEnabled = !pointer.From(props.DisableLocalAuth)
+			state.PublicNetworkAccess = pointer.From(props.PublicNetworkAccess)
+
+			if socketio := props.SocketIO; socketio != nil {
+				state.ServiceMode = pointer.From(socketio.ServiceMode)
+			}
+
+			if tls := props.Tls; tls != nil {
+				state.TlsClientCertEnabled = pointer.From(tls.ClientCertEnabled)
+			}
+		}
+	}
+
+	if keyModel != nil {
+		state.PrimaryAccessKey = pointer.From(keyModel.PrimaryKey)
+		state.PrimaryConnectionString = pointer.From(keyModel.PrimaryConnectionString)
+		state.SecondaryAccessKey = pointer.From(keyModel.SecondaryKey)
+		state.SecondaryConnectionString = pointer.From(keyModel.SecondaryConnectionString)
+	}
+
+	if err := pluginsdk.SetResourceIdentityData(metadata.ResourceData, id); err != nil {
+		return err
+	}
+
+	return metadata.Encode(&state)
 }
 
 func (w WebPubSubSocketIOResource) Update() sdk.ResourceFunc {
