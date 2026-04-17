@@ -5,9 +5,9 @@ package compute_test
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/location"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/check"
 )
@@ -22,7 +22,7 @@ func TestAccOrchestratedVMSSDataSource_complete(t *testing.T) {
 		{
 			Config: d.complete(data),
 			Check: acceptance.ComposeTestCheckFunc(
-				check.That(data.ResourceName).Key("location").HasValue(strings.ToLower(data.Locations.Primary)),
+				check.That(data.ResourceName).Key("location").HasValue(location.Normalize(data.Locations.Primary)),
 				check.That(data.ResourceName).Key("network_interface.#").HasValue("1"),
 			),
 		},
@@ -37,7 +37,7 @@ func TestAccOrchestratedVMSSDataSource_skuProfile(t *testing.T) {
 		{
 			Config: d.skuProfile(data),
 			Check: acceptance.ComposeTestCheckFunc(
-				check.That(data.ResourceName).Key("location").HasValue(strings.ToLower(data.Locations.Primary)),
+				check.That(data.ResourceName).Key("location").HasValue(location.Normalize(data.Locations.Primary)),
 				check.That(data.ResourceName).Key("sku_profile.#").HasValue("1"),
 				check.That(data.ResourceName).Key("sku_profile.0.allocation_strategy").HasValue("CapacityOptimized"),
 				check.That(data.ResourceName).Key("sku_profile.0.virtual_machine_size.#").HasValue("3"),

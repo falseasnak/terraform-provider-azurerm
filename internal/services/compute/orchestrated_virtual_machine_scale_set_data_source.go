@@ -373,7 +373,7 @@ func flattenVirtualMachineScaleSetSkuProfileForDataSource(input *virtualmachines
 			}
 
 			if vmSize.Rank != nil {
-				vmSizeStruct.Rank = pointer.From(vmSize.Rank)
+				vmSizeStruct.Rank = pointer.From(vmSize.Rank) + 1
 			}
 
 			vmSizes = append(vmSizes, vmSizeStruct)
