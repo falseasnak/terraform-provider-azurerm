@@ -315,7 +315,7 @@ resource "azurerm_orchestrated_virtual_machine_scale_set" "test" {
 
   sku_name = "%[3]s"
 %[4]s
-	instances                   = 1
+  instances                   = 1
   platform_fault_domain_count = 1
 
   os_profile {
@@ -386,13 +386,13 @@ func (r OrchestratedVirtualMachineScaleSetResource) skuProfileRankWithoutPriorit
     allocation_strategy = "CapacityOptimized"
 
     virtual_machine_size {
-	  name = "Standard_D2s_v3"
-	  rank = 1
+      name = "Standard_D2s_v3"
+      rank = 1
     }
 
     virtual_machine_size {
-	  name = "Standard_D4s_v3"
-	  rank = 2
+      name = "Standard_D4s_v3"
+      rank = 2
     }
   }`
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
@@ -400,46 +400,46 @@ func (r OrchestratedVirtualMachineScaleSetResource) skuProfileRankWithoutPriorit
 
 func (r OrchestratedVirtualMachineScaleSetResource) skuProfileInvalidVMSizePrefix(data acceptance.TestData) string {
 	skuProfileBlock := `  sku_profile {
-		allocation_strategy = "CapacityOptimized"
+    allocation_strategy = "CapacityOptimized"
 
-		virtual_machine_size {
-			name = "D2s_v5"
-		}
+    virtual_machine_size {
+      name = "D2s_v5"
+    }
 
-		virtual_machine_size {
-				name = "Standard_D2s_v3"
-		}
-	}`
+    virtual_machine_size {
+      name = "Standard_D2s_v3"
+    }
+  }`
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
 }
 
 func (r OrchestratedVirtualMachineScaleSetResource) skuProfileInvalidVMSizeFamily(data acceptance.TestData) string {
 	skuProfileBlock := `  sku_profile {
-		allocation_strategy = "CapacityOptimized"
+    allocation_strategy = "CapacityOptimized"
 
-		virtual_machine_size {
-			name = "Standard_L8s_v3"
-		}
+    virtual_machine_size {
+      name = "Standard_L8s_v3"
+    }
 
-		virtual_machine_size {
-				name = "Standard_D2s_v3"
-		}
-	}`
+    virtual_machine_size {
+      name = "Standard_D2s_v3"
+    }
+  }`
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
 }
 
 func (r OrchestratedVirtualMachineScaleSetResource) skuProfileInvalidVMSizeConfidentialFamily(data acceptance.TestData) string {
 	skuProfileBlock := `  sku_profile {
-		allocation_strategy = "CapacityOptimized"
+    allocation_strategy = "CapacityOptimized"
 
-		virtual_machine_size {
-			name = "Standard_DC2ads_v5"
-		}
+    virtual_machine_size {
+      name = "Standard_DC2ads_v5"
+    }
 
-		virtual_machine_size {
-				name = "Standard_D2s_v3"
-		}
-	}`
+    virtual_machine_size {
+      name = "Standard_D2s_v3"
+    }
+  }`
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
 }
 
@@ -481,51 +481,51 @@ func skuProfilePrioritizedWithRank() string {
     allocation_strategy = "Prioritized"
 
     virtual_machine_size {
-	  name = "Standard_A2_v2"
-	  rank = 1
+      name = "Standard_A2_v2"
+      rank = 1
     }
 
     virtual_machine_size {
-	  name = "Standard_D2s_v3"
-	  rank = 3
+      name = "Standard_D2s_v3"
+      rank = 3
     }
 
     virtual_machine_size {
-	  name = "Standard_F2s_v2"
-	  rank = 3
+      name = "Standard_F2s_v2"
+      rank = 3
     }
   }`
 }
 
 func skuProfilePrioritizedWithFiveVMSizesOutOfOrderDuplicateRanks() string {
 	return `  sku_profile {
-		allocation_strategy = "Prioritized"
+    allocation_strategy = "Prioritized"
 
-		virtual_machine_size {
-			name = "Standard_A2_v2"
-	  rank = 3
-		}
+    virtual_machine_size {
+      name = "Standard_A2_v2"
+      rank = 3
+    }
 
-		virtual_machine_size {
-			name = "Standard_D2s_v3"
-	  rank = 1
-		}
+    virtual_machine_size {
+      name = "Standard_D2s_v3"
+      rank = 1
+    }
 
-		virtual_machine_size {
-			name = "Standard_F2s_v2"
-	  rank = 2
-		}
+    virtual_machine_size {
+      name = "Standard_F2s_v2"
+      rank = 2
+    }
 
-		virtual_machine_size {
-			name = "Standard_F4s_v2"
-	  rank = 3
-		}
+    virtual_machine_size {
+      name = "Standard_F4s_v2"
+      rank = 3
+    }
 
-		virtual_machine_size {
-			name = "Standard_E2s_v3"
-	  rank = 1
-		}
-	}`
+    virtual_machine_size {
+      name = "Standard_E2s_v3"
+      rank = 1
+    }
+  }`
 }
 
 func (r OrchestratedVirtualMachineScaleSetResource) skuProfileForceNewTransition(data acceptance.TestData) string {
@@ -544,7 +544,7 @@ func (r OrchestratedVirtualMachineScaleSetResource) skuProfileNeitherFieldProvid
 func (r OrchestratedVirtualMachineScaleSetResource) skuProfileDeprecatedSimple(data acceptance.TestData) string {
 	skuProfileBlock := `  sku_profile {
     allocation_strategy = "LowestPrice"
-	vm_sizes = ["Standard_A2_v2", "Standard_D2s_v3"]
+    vm_sizes = ["Standard_A2_v2", "Standard_D2s_v3"]
   }`
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
 }
@@ -553,7 +553,7 @@ func (r OrchestratedVirtualMachineScaleSetResource) skuProfileDeprecatedSimple(d
 func (r OrchestratedVirtualMachineScaleSetResource) skuProfileDeprecatedInvalidVMSizeFamily(data acceptance.TestData) string {
 	skuProfileBlock := `  sku_profile {
     allocation_strategy = "LowestPrice"
-	vm_sizes = ["Standard_L8s_v3", "Standard_D2s_v3"]
+    vm_sizes = ["Standard_L8s_v3", "Standard_D2s_v3"]
   }`
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
 }
@@ -562,7 +562,7 @@ func (r OrchestratedVirtualMachineScaleSetResource) skuProfileDeprecatedInvalidV
 func (r OrchestratedVirtualMachineScaleSetResource) skuProfileDeprecatedUpdate(data acceptance.TestData) string {
 	skuProfileBlock := `  sku_profile {
     allocation_strategy = "LowestPrice"
-	vm_sizes = ["Standard_A2_v2", "Standard_D2s_v3", "Standard_F2s_v2"]
+    vm_sizes = ["Standard_A2_v2", "Standard_D2s_v3", "Standard_F2s_v2"]
   }`
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
 }
