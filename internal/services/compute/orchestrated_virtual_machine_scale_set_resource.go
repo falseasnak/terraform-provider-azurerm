@@ -5,6 +5,7 @@ package compute
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -394,7 +395,7 @@ func resourceOrchestratedVirtualMachineScaleSet() *pluginsdk.Resource {
 						vmSizesProvided := len(skuProfile["vm_sizes"].(*pluginsdk.Set).List()) > 0
 						vmSizeProvided := len(skuProfile["virtual_machine_size"].(*pluginsdk.Set).List()) > 0
 						if !vmSizesProvided && !vmSizeProvided {
-							return fmt.Errorf("either `vm_sizes` or `virtual_machine_size` must be configured in `sku_profile`")
+							return errors.New("either `vm_sizes` or `virtual_machine_size` must be configured in `sku_profile`")
 						}
 					}
 
@@ -1721,7 +1722,7 @@ func expandOrchestratedVirtualMachineScaleSetSkuProfile(d *pluginsdk.ResourceDat
 	}
 
 	return &virtualmachinescalesets.SkuProfile{
-		AllocationStrategy: pointer.To((virtualmachinescalesets.AllocationStrategy)(allocationStrategy)),
+		AllocationStrategy: pointer.ToEnum[virtualmachinescalesets.AllocationStrategy](allocationStrategy),
 		VMSizes:            pointer.To(vmSizes),
 	}
 }

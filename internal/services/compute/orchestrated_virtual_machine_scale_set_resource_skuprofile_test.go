@@ -1,4 +1,4 @@
-// Copyright (c) HashiCorp, Inc.
+// Copyright IBM Corp. 2014, 2025
 // SPDX-License-Identifier: MPL-2.0
 
 package compute_test
@@ -15,11 +15,29 @@ import (
 	"github.com/hashicorp/terraform-provider-azurerm/internal/features"
 )
 
+func sequentialResourceTest(t *testing.T, data acceptance.TestData, testResource OrchestratedVirtualMachineScaleSetResource, steps []acceptance.TestStep) {
+	refreshStep := acceptance.TestStep{
+		RefreshState: true,
+	}
+
+	newSteps := make([]acceptance.TestStep, 0)
+	for _, step := range steps {
+		if !step.ImportState {
+			newSteps = append(newSteps, step)
+		} else {
+			newSteps = append(newSteps, refreshStep)
+			newSteps = append(newSteps, step)
+		}
+	}
+
+	data.ResourceSequentialTest(t, testResource, newSteps)
+}
+
 func TestAccOrchestratedVirtualMachineScaleSet_skuProfile_basic(t *testing.T) {
 	data := acceptance.BuildTestData(t, "azurerm_orchestrated_virtual_machine_scale_set", "test")
 	r := OrchestratedVirtualMachineScaleSetResource{}
 
-	data.ResourceTest(t, r, []acceptance.TestStep{
+	sequentialResourceTest(t, data, r, []acceptance.TestStep{
 		{
 			Config: r.skuProfileBasic(data),
 			Check: acceptance.ComposeTestCheckFunc(
@@ -39,7 +57,7 @@ func TestAccOrchestratedVirtualMachineScaleSet_skuProfile_vmSizesBackwardCompati
 	data := acceptance.BuildTestData(t, "azurerm_orchestrated_virtual_machine_scale_set", "test")
 	r := OrchestratedVirtualMachineScaleSetResource{}
 
-	data.ResourceTest(t, r, []acceptance.TestStep{
+	sequentialResourceTest(t, data, r, []acceptance.TestStep{
 		{
 			// The OVMSS is deployed with the deprecated `vm_sizes`...
 			Config: r.skuProfileDeprecatedSimple(data),
@@ -53,8 +71,8 @@ func TestAccOrchestratedVirtualMachineScaleSet_skuProfile_vmSizesBackwardCompati
 			Config:   r.skuProfileUpdate(data),
 			PlanOnly: true,
 			ConfigPlanChecks: resource.ConfigPlanChecks{
-				PreApply: []plancheck.PlanCheck{
-					plancheck.ExpectResourceAction(data.ResourceName, plancheck.ResourceActionNoop),
+				PostApplyPreRefresh: []plancheck.PlanCheck{
+					plancheck.ExpectEmptyPlan(),
 				},
 			},
 		},
@@ -64,8 +82,8 @@ func TestAccOrchestratedVirtualMachineScaleSet_skuProfile_vmSizesBackwardCompati
 			Config:   r.skuProfileDeprecatedSimple(data),
 			PlanOnly: true,
 			ConfigPlanChecks: resource.ConfigPlanChecks{
-				PreApply: []plancheck.PlanCheck{
-					plancheck.ExpectResourceAction(data.ResourceName, plancheck.ResourceActionNoop),
+				PostApplyPreRefresh: []plancheck.PlanCheck{
+					plancheck.ExpectEmptyPlan(),
 				},
 			},
 		},
@@ -82,7 +100,7 @@ func TestAccOrchestratedVirtualMachineScaleSet_skuProfile_vmSizesBackwardCompati
 	data := acceptance.BuildTestData(t, "azurerm_orchestrated_virtual_machine_scale_set", "test")
 	r := OrchestratedVirtualMachineScaleSetResource{}
 
-	data.ResourceTest(t, r, []acceptance.TestStep{
+	sequentialResourceTest(t, data, r, []acceptance.TestStep{
 		{
 			Config: r.skuProfileDeprecatedSimple(data),
 			Check: acceptance.ComposeTestCheckFunc(
@@ -111,7 +129,7 @@ func TestAccOrchestratedVirtualMachineScaleSet_skuProfile_update(t *testing.T) {
 	data := acceptance.BuildTestData(t, "azurerm_orchestrated_virtual_machine_scale_set", "test")
 	r := OrchestratedVirtualMachineScaleSetResource{}
 
-	data.ResourceTest(t, r, []acceptance.TestStep{
+	sequentialResourceTest(t, data, r, []acceptance.TestStep{
 		{
 			Config: r.skuProfileBasic(data),
 			Check: acceptance.ComposeTestCheckFunc(
@@ -140,7 +158,7 @@ func TestAccOrchestratedVirtualMachineScaleSet_skuProfile_withRank(t *testing.T)
 	data := acceptance.BuildTestData(t, "azurerm_orchestrated_virtual_machine_scale_set", "test")
 	r := OrchestratedVirtualMachineScaleSetResource{}
 
-	data.ResourceTest(t, r, []acceptance.TestStep{
+	sequentialResourceTest(t, data, r, []acceptance.TestStep{
 		{
 			Config: r.skuProfileWithRank(data),
 			Check: acceptance.ComposeTestCheckFunc(
@@ -155,7 +173,7 @@ func TestAccOrchestratedVirtualMachineScaleSet_skuProfile_withFiveVMSizesOutOfOr
 	data := acceptance.BuildTestData(t, "azurerm_orchestrated_virtual_machine_scale_set", "test")
 	r := OrchestratedVirtualMachineScaleSetResource{}
 
-	data.ResourceTest(t, r, []acceptance.TestStep{
+	sequentialResourceTest(t, data, r, []acceptance.TestStep{
 		{
 			Config: r.skuProfileWithFiveVMSizesOutOfOrderDuplicateRanks(data),
 			Check: acceptance.ComposeTestCheckFunc(
@@ -174,7 +192,7 @@ func TestAccOrchestratedVirtualMachineScaleSet_skuProfile_customizeDiffValidatio
 	testSteps := []acceptance.TestStep{
 		{
 			Config:      r.skuProfileSkuNameIsNotMix(data),
-			ExpectError: regexp.MustCompile("`sku_profile` can only be configured when `sku_name` is set to `Mix`, got `Standard_B1s`"),
+			ExpectError: regexp.MustCompile("`sku_profile` can only be configured when `sku_name` is set to `Mix`, got `Standard_D2s_v3`"),
 		},
 		{
 			Config:      r.skuProfileNotExist(data),
@@ -235,7 +253,7 @@ func TestAccOrchestratedVirtualMachineScaleSet_skuProfile_forceNewOnRemovalWithS
 	data := acceptance.BuildTestData(t, "azurerm_orchestrated_virtual_machine_scale_set", "test")
 	r := OrchestratedVirtualMachineScaleSetResource{}
 
-	data.ResourceTestIgnoreRecreate(t, r, []acceptance.TestStep{
+	sequentialResourceTest(t, data, r, []acceptance.TestStep{
 		{
 			Config: r.skuProfileBasic(data),
 			Check: acceptance.ComposeTestCheckFunc(
@@ -297,7 +315,7 @@ resource "azurerm_orchestrated_virtual_machine_scale_set" "test" {
 
   sku_name = "%[3]s"
 %[4]s
-  instances                   = 2
+	instances                   = 1
   platform_fault_domain_count = 1
 
   os_profile {
@@ -355,12 +373,8 @@ func (r OrchestratedVirtualMachineScaleSetResource) skuProfileWithFiveVMSizesOut
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfilePrioritizedWithFiveVMSizesOutOfOrderDuplicateRanks())
 }
 
-func (r OrchestratedVirtualMachineScaleSetResource) skuProfileWithoutSkuName(data acceptance.TestData) string {
-	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "", skuProfileCapacityOptimized())
-}
-
 func (r OrchestratedVirtualMachineScaleSetResource) skuProfileSkuNameIsNotMix(data acceptance.TestData) string {
-	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Standard_B1s", skuProfileCapacityOptimized())
+	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Standard_D2s_v3", skuProfileCapacityOptimized())
 }
 
 func (r OrchestratedVirtualMachineScaleSetResource) skuProfileNotExist(data acceptance.TestData) string {
@@ -372,28 +386,13 @@ func (r OrchestratedVirtualMachineScaleSetResource) skuProfileRankWithoutPriorit
     allocation_strategy = "CapacityOptimized"
 
     virtual_machine_size {
-      name = "Standard_B1ls"
+	  name = "Standard_D2s_v3"
 	  rank = 1
     }
 
     virtual_machine_size {
-      name = "Standard_B1s"
+	  name = "Standard_D4s_v3"
 	  rank = 2
-    }
-  }`
-	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
-}
-
-func (r OrchestratedVirtualMachineScaleSetResource) skuProfileDuplicateVMSizes(data acceptance.TestData) string {
-	skuProfileBlock := `  sku_profile {
-    allocation_strategy = "CapacityOptimized"
-
-    virtual_machine_size {
-      name = "Standard_B1ls"
-    }
-
-    virtual_machine_size {
-      name = "Standard_B1ls"
     }
   }`
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
@@ -408,7 +407,7 @@ func (r OrchestratedVirtualMachineScaleSetResource) skuProfileInvalidVMSizePrefi
 		}
 
 		virtual_machine_size {
-			name = "Standard_B1s"
+				name = "Standard_D2s_v3"
 		}
 	}`
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
@@ -423,7 +422,7 @@ func (r OrchestratedVirtualMachineScaleSetResource) skuProfileInvalidVMSizeFamil
 		}
 
 		virtual_machine_size {
-			name = "Standard_B1s"
+				name = "Standard_D2s_v3"
 		}
 	}`
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
@@ -438,7 +437,7 @@ func (r OrchestratedVirtualMachineScaleSetResource) skuProfileInvalidVMSizeConfi
 		}
 
 		virtual_machine_size {
-			name = "Standard_B1s"
+				name = "Standard_D2s_v3"
 		}
 	}`
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
@@ -450,15 +449,15 @@ func skuProfileCapacityOptimized() string {
     allocation_strategy = "CapacityOptimized"
 
     virtual_machine_size {
-      name = "Standard_B1ls"
+	  name = "Standard_A2_v2"
     }
 
     virtual_machine_size {
-      name = "Standard_B1s"
+	  name = "Standard_D2s_v3"
     }
 
     virtual_machine_size {
-      name = "Standard_B2s"
+	  name = "Standard_F2s_v2"
     }
   }`
 }
@@ -468,11 +467,11 @@ func skuProfileLowestPrice() string {
     allocation_strategy = "LowestPrice"
 
     virtual_machine_size {
-      name = "Standard_B1s"
+	  name = "Standard_D2s_v3"
     }
 
     virtual_machine_size {
-      name = "Standard_B1ls"
+	  name = "Standard_A2_v2"
     }
   }`
 }
@@ -482,17 +481,17 @@ func skuProfilePrioritizedWithRank() string {
     allocation_strategy = "Prioritized"
 
     virtual_machine_size {
-      name = "Standard_B1ls"
+	  name = "Standard_A2_v2"
 	  rank = 1
     }
 
     virtual_machine_size {
-      name = "Standard_B1s"
+	  name = "Standard_D2s_v3"
 	  rank = 3
     }
 
     virtual_machine_size {
-      name = "Standard_B2s"
+	  name = "Standard_F2s_v2"
 	  rank = 3
     }
   }`
@@ -503,34 +502,34 @@ func skuProfilePrioritizedWithFiveVMSizesOutOfOrderDuplicateRanks() string {
 		allocation_strategy = "Prioritized"
 
 		virtual_machine_size {
-			name = "Standard_B1ls"
+			name = "Standard_A2_v2"
 	  rank = 3
 		}
 
 		virtual_machine_size {
-			name = "Standard_B1s"
+			name = "Standard_D2s_v3"
 	  rank = 1
 		}
 
 		virtual_machine_size {
-			name = "Standard_B2s"
+			name = "Standard_F2s_v2"
 	  rank = 2
 		}
 
 		virtual_machine_size {
-			name = "Standard_D2s_v5"
+			name = "Standard_F4s_v2"
 	  rank = 3
 		}
 
 		virtual_machine_size {
-			name = "Standard_D4s_v5"
+			name = "Standard_E2s_v3"
 	  rank = 1
 		}
 	}`
 }
 
 func (r OrchestratedVirtualMachineScaleSetResource) skuProfileForceNewTransition(data acceptance.TestData) string {
-	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Standard_B1s", "")
+	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Standard_D2s_v3", "")
 }
 
 // TODO: Remove in v5.0
@@ -545,7 +544,7 @@ func (r OrchestratedVirtualMachineScaleSetResource) skuProfileNeitherFieldProvid
 func (r OrchestratedVirtualMachineScaleSetResource) skuProfileDeprecatedSimple(data acceptance.TestData) string {
 	skuProfileBlock := `  sku_profile {
     allocation_strategy = "LowestPrice"
-    vm_sizes = ["Standard_B1ls", "Standard_B1s"]
+	vm_sizes = ["Standard_A2_v2", "Standard_D2s_v3"]
   }`
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
 }
@@ -554,7 +553,7 @@ func (r OrchestratedVirtualMachineScaleSetResource) skuProfileDeprecatedSimple(d
 func (r OrchestratedVirtualMachineScaleSetResource) skuProfileDeprecatedInvalidVMSizeFamily(data acceptance.TestData) string {
 	skuProfileBlock := `  sku_profile {
     allocation_strategy = "LowestPrice"
-    vm_sizes = ["Standard_L8s_v3", "Standard_B1s"]
+	vm_sizes = ["Standard_L8s_v3", "Standard_D2s_v3"]
   }`
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
 }
@@ -563,7 +562,7 @@ func (r OrchestratedVirtualMachineScaleSetResource) skuProfileDeprecatedInvalidV
 func (r OrchestratedVirtualMachineScaleSetResource) skuProfileDeprecatedUpdate(data acceptance.TestData) string {
 	skuProfileBlock := `  sku_profile {
     allocation_strategy = "LowestPrice"
-    vm_sizes = ["Standard_B1ls", "Standard_B1s", "Standard_B2s"]
+	vm_sizes = ["Standard_A2_v2", "Standard_D2s_v3", "Standard_F2s_v2"]
   }`
 	return r.skuProfileTemplate(data) + "\n" + r.skuProfileConfig(data, "Mix", skuProfileBlock)
 }
