@@ -272,7 +272,7 @@ When designing schemas, consider flattening properties with `MaxItems: 1` that c
     Optional: true,
     Elem:     &pluginsdk.Schema{
         Type:         pluginsdk.TypeString,
-        // NOTE: validation is intentionally minimal since there is no stable RP contract for the certificate contents beyond a non-empty string.
+        // NOTE: validation is intentionally minimal since there is no stable API contract for the certificate contents beyond a non-empty string.
         ValidateFunc: validation.StringIsNotEmpty,
     },
 }
@@ -327,34 +327,86 @@ When a `pluginsdk.TypeList` block has no required nested fields, conditional val
 }
 ```
 
-## Validation
+## Validation functions
 
-String arguments must be validated against the Resource Provider (RP) / API contract wherever possible.
+### String arguments must be validated against the API contract wherever possible.
 
-As a rule of thumb, ensure common shapes have appropriate, specific validators:
+In practice, common shapes should use appropriate, specific validators:
 - Validate `name`-like fields for length and allowed characters (use regex/patterns from the spec where available)
 - Use `commonids` or service-specific ID validators for resource IDs
 - Validate common formats like dates, IPs, ports, emails, and URIs
 
-This means using constraints from the swagger/spec, SDK types/constants, or RP documentation:
+This means using constraints from the swagger/spec, SDK types/constants, or API documentation:
 - Allowed values (enums)
 - Patterns/regex
 - Length bounds
 - Formats (dates, IPs, ports, emails, URIs)
 - Resource ID shapes (prefer `commonids` or service-specific validators)
 
-`validation.StringIsNotEmpty` is a LAST RESORT ONLY.
-It is only acceptable when you have confirmed the RP truly accepts arbitrary free-form text and there are no stable rules to validate.
-If you use `validation.StringIsNotEmpty`, you MUST add an inline comment explaining why stronger validation cannot be applied and what you checked.
+> **Note:** `validation.StringIsNotEmpty` is a **LAST RESORT ONLY**. It is only acceptable when you have confirmed the API truly accepts arbitrary free-form text and there are no stable rules to validate. If you use `validation.StringIsNotEmpty`, you **MUST** add an inline comment explaining why stronger validation cannot be applied and what you checked.
 
-Numeric arguments must specify a valid range wherever possible.
-`validation.IntAtLeast(0)` is a LAST RESORT ONLY and must be justified the same way as above.
+**Example:**
+
+```go
+"description": {
+    Type:     pluginsdk.TypeString,
+    Optional: true,
+    // NOTE: validation is intentionally minimal because the API accepts arbitrary free-form text for this field (no enum/pattern/length constraints found).
+    ValidateFunc: validation.StringIsNotEmpty,
+},
+```
+
+### Numeric arguments must be validated against the API contract wherever possible.
+
+For numeric fields, prefer validators that match the API contract as closely as possible:
+- Validate numeric ranges using the documented minimum and maximum values
+- Use exact allowed values when the API only accepts a fixed set of numeric values
+- Validate percentages, capacities, counts, sizes, priorities, and similar fields against the bounds defined by the API
+- Use integer validators for integer fields and float validators for decimal fields
+- Prefer `IntBetween` / `FloatBetween` when both bounds are known, and only use `IntAtLeast` / `FloatAtLeast` when the API contract truly defines a lower bound without an upper bound
+
+> **Note:** `validation.IntAtLeast` and `validation.FloatAtLeast` are **LAST RESORT ONLY**. They are only acceptable when you have confirmed that the API defines a lower bound, but does not define a stable upper bound or fixed set of allowed values to validate against.
+
+**Example:**
+
+```go
+"parallelism": {
+    Type:         pluginsdk.TypeInt,
+    Optional:     true,
+    // NOTE: validation is intentionally minimal because the API only defines the lower bound value (no upper bound constraints found).
+    ValidateFunc: validation.IntAtLeast(1),
+},
+```
+
+```go
+"cpu": {
+    Type:         pluginsdk.TypeFloat,
+    Required:     true,
+    // NOTE: validation is intentionally minimal because the API only defines the lower bound value (no upper bound constraints found).
+    ValidateFunc: validation.FloatAtLeast(0.1),
+},
+```
+
+### Before writing a new validator, check whether one already exists.
+
+Common places to look are:
+
+* `commonids` for common Azure Resource Manager ID shapes such as `subnets`, `virtual machines`, `managed disks`, `user-assigned identities`, and `resource groups`.
+
+* `internal/tf/validation` for generic string, number, and format validators such as `StringInSlice`, `StringLenBetween`, `IsEmailAddress`, `IsURLWithHTTPS`, `IntBetween`, and `Any`.
+
+* `internal/services/<service>/validate` for service-specific validators, for example name rules, resource-specific IDs, or service-specific value constraints.
+
+> **Note:** The easiest way to discover existing validators is to first look at a similar resource in the same service and then search for `ValidateFunc:` usages in that package.
 
 ### Avoid overly-generic ValidateFunc (no "lazy validation")
 
-When adding or modifying schema fields, do not default to minimal validators if the RP provides stronger constraints.
+When adding or modifying schema fields, do not default to minimal validators if the API provides stronger constraints.
 
-**DO** validate using the RP contract
+**DO** validate using the API contract
+
+When the provider intentionally exposes only a subset of the API values, define that subset explicitly in the schema:
+
 ```go
 "allocation_strategy": {
     Type:     pluginsdk.TypeString,
@@ -364,18 +416,33 @@ When adding or modifying schema fields, do not default to minimal validators if 
         string(compute.AllocationStrategyPrioritized),
     }, false),
 },
+```
 
+When the SDK already exposes the exact set of values that the schema should accept, use the SDK helper directly:
+
+```go
+"network_api_version": {
+    Type:         pluginsdk.TypeString,
+    Optional:     true,
+    ValidateFunc: validation.StringInSlice(virtualmachinescalesets.PossibleValuesForNetworkApiVersion(), false),
+},
+```
+
+Use regex or other format validators when the API contract defines a pattern rather than a fixed list of values:
+
+```go
 "name": {
     Type:     pluginsdk.TypeString,
     Required: true,
     ValidateFunc: validation.StringMatch(
         regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9.\-_]{0,79}$`),
-        "...",
+        "`name` must be between 1 and 80 characters and must start with an alphanumeric character and can contain alphanumeric characters, dots (.), hyphens (-), and underscores (_)",
     ),
 },
 ```
 
-**DO** use ID/format validators for well-known shapes
+**DO** use existing ID/format/range validators for well-known shapes
+
 ```go
 "subnet_id": {
     Type:         pluginsdk.TypeString,
@@ -384,83 +451,67 @@ When adding or modifying schema fields, do not default to minimal validators if 
 },
 ```
 
-**DO NOT** use minimal validation when stronger constraints exist
 ```go
-// BAD: RP defines allowed values / pattern / bounds, but this accepts nearly anything.
-ValidateFunc: validation.StringIsNotEmpty,
+"user_assigned_identity_id": {
+    Type:         pluginsdk.TypeString,
+    Optional:     true,
+    ValidateFunc: commonids.ValidateUserAssignedIdentityID,
+},
+```
 
-// BAD: RP bounds exist, but this only enforces non-negative.
+```go
+"output_blob_uri": {
+    Type:         pluginsdk.TypeString,
+    Optional:     true,
+    ValidateFunc: validation.IsURLWithHTTPS,
+},
+```
+
+```go
+"extensions_time_budget": {
+    Type:         pluginsdk.TypeString,
+    Optional:     true,
+    ValidateFunc: validate.ISO8601DurationBetween("PT15M", "PT2H"),
+},
+```
+
+```go
+"ip_address": {
+    Type:         pluginsdk.TypeString,
+    Optional:     true,
+    ValidateFunc: azValidate.IPv4Address,
+},
+```
+
+```go
+"sim_policy_id": {
+    Type:         pluginsdk.TypeString,
+    Optional:     true,
+    ValidateFunc: simpolicy.ValidateSimPolicyID,
+},
+```
+
+```go
+"storage_size_in_gb": {
+    Type:         pluginsdk.TypeInt,
+    Optional:     true,
+    ValidateFunc: validation.IntBetween(32, 16384),
+},
+```
+
+**DO NOT** use minimal validation when stronger constraints exist
+
+```go
+// BAD: API defines allowed values / pattern / bounds, but this accepts nearly anything.
+ValidateFunc: validation.StringIsNotEmpty,
+```
+
+```go
+// BAD: API bounds exist, but this only enforces non-negative integers.
 ValidateFunc: validation.IntAtLeast(0),
 ```
 
-**LAST RESORT** (only when RP truly has no constraints)
 ```go
-"description": {
-    Type:     pluginsdk.TypeString,
-    Optional: true,
-    // NOTE: validation is intentionally minimal because the RP accepts arbitrary free-form text for this field (no enum/pattern/length constraints found).
-    ValidateFunc: validation.StringIsNotEmpty,
-},
-```
-
-```go
-"name": {
-	Type:     pluginsdk.TypeString,
-	Required: true,
-	ForceNew: true,
-	ValidateFunc: validation.StringMatch(
-		regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9.\-_]{0,79}$`),
-		"`name` must be between 1 and 80 characters. It must start with an alphanumeric character and can contain alphanumeric characters, dots (.), hyphens (-), and underscores (_).",
-	),
-},
-
-"subnet_id": {
-	Type:         pluginsdk.TypeString,
-	Required:     true,
-	ValidateFunc: commonids.ValidateSubnetID,
-},
-
-"description": {
-	Type:         pluginsdk.TypeString,
-	Optional:     true,
-	// NOTE: validation is intentionally minimal because the RP accepts arbitrary free-form text for this field (no enum/pattern/length constraints found).
-	ValidateFunc: validation.StringIsNotEmpty,
-},
-
-"extensions_time_budget": {
-	Type:         pluginsdk.TypeString,
-	Optional:     true,
-	Default:      "PT1H30M",
-	ValidateFunc: validate.ISO8601DurationBetween("PT15M", "PT2H"),
-},
-
-"filter_value_percentage": {
-	Type:         pluginsdk.TypeFloat,
-	Optional:     true,
-	ValidateFunc: validation.FloatBetween(0, 100),
-},
-
-"ip_address": {
-	Type:         pluginsdk.TypeString,
-	Optional:     true,
-	ValidateFunc: azValidate.IPv4Address,
-},
-
-"output_blob_uri": {
-	Type:         pluginsdk.TypeString,
-	Optional:     true,
-	ValidateFunc: validation.IsURLWithHTTPS,
-},
-
-"sim_policy_id": {
-	Type:         pluginsdk.TypeString,
-	Optional:     true,
-	ValidateFunc: simpolicy.ValidateSimPolicyID,
-},
-
-"storage_size_in_gb": {
-	Type:         pluginsdk.TypeInt,
-	Optional:     true,
-	ValidateFunc: validation.IntBetween(32, 16384),
-},
+// BAD: API bounds exist, but this only enforces non-negative decimal values.
+ValidateFunc: validation.FloatAtLeast(0),
 ```
