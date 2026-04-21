@@ -16,7 +16,7 @@ import (
 
 func TestAccWebPubSubSocketIO_list(t *testing.T) {
 	data := acceptance.BuildTestData(t, "azurerm_web_pubsub_socketio", "test")
-	r := WebPubSubSocketIOTestResource{}
+	r := WebPubsubSocketioResource{}
 
 	resource.Test(t, resource.TestCase{
 		TerraformVersionChecks: []tfversion.TerraformVersionCheck{
@@ -25,7 +25,7 @@ func TestAccWebPubSubSocketIO_list(t *testing.T) {
 		ProtoV5ProviderFactories: framework.ProtoV5ProviderFactoriesInit(context.Background(), "azurerm"),
 		Steps: []resource.TestStep{
 			{
-				Config: r.basic(data, "Standard_S1", 1),
+				Config: r.basic(data),
 			},
 			{
 				Query:  true,
@@ -61,7 +61,7 @@ func TestAccWebPubSubSocketIO_list(t *testing.T) {
 	})
 }
 
-func (WebPubSubSocketIOTestResource) basicListQuery() string {
+func (WebPubsubSocketioResource) basicListQuery() string {
 	return `
 list "azurerm_web_pubsub_socketio" "list" {
   provider = azurerm
@@ -70,7 +70,7 @@ list "azurerm_web_pubsub_socketio" "list" {
 `
 }
 
-func (WebPubSubSocketIOTestResource) basicListQueryByResourceGroupName() string {
+func (WebPubsubSocketioResource) basicListQueryByResourceGroupName() string {
 	return `
 list "azurerm_web_pubsub_socketio" "list" {
   provider = azurerm

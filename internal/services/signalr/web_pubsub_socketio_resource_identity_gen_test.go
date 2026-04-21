@@ -13,9 +13,9 @@ import (
 	customstatecheck "github.com/hashicorp/terraform-provider-azurerm/internal/acceptance/statecheck"
 )
 
-func TestAccWebPubSubSocketIO_resourceIdentity(t *testing.T) {
+func TestAccWebPubsubSocketio_resourceIdentity(t *testing.T) {
 	data := acceptance.BuildTestData(t, "azurerm_web_pubsub_socketio", "test")
-	r := WebPubSubSocketIOTestResource{}
+	r := WebPubsubSocketioResource{}
 
 	checkedFields := map[string]struct{}{
 		"subscription_id":     {},
@@ -25,7 +25,7 @@ func TestAccWebPubSubSocketIO_resourceIdentity(t *testing.T) {
 
 	data.ResourceIdentityTest(t, []acceptance.TestStep{
 		{
-			Config: r.basic(data, "Standard_S1", 1),
+			Config: r.basic(data),
 			ConfigStateChecks: []statecheck.StateCheck{
 				customstatecheck.ExpectAllIdentityFieldsAreChecked("azurerm_web_pubsub_socketio.test", checkedFields),
 				statecheck.ExpectIdentityValue("azurerm_web_pubsub_socketio.test", tfjsonpath.New("subscription_id"), knownvalue.StringExact(data.Subscriptions.Primary)),
