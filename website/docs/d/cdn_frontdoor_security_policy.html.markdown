@@ -1,7 +1,7 @@
 ---
 subcategory: "CDN"
 layout: "azurerm"
-page_title: "Azure Resource Manager: azurerm_cdn_frontdoor_security_policy"
+page_title: "Azure Resource Manager: Data Source: azurerm_cdn_frontdoor_security_policy"
 description: |-
   Gets information about an existing Front Door (standard/premium) Security Policy.
 ---
@@ -101,7 +101,7 @@ The following arguments are supported:
 
 * `profile_name` - (Required) The name of the Front Door Profile.
 
-* `resource_group_name` - (Required) The name of the resource group.
+* `resource_group_name` - (Required) The name of the Resource Group.
 
 ## Attributes Reference
 

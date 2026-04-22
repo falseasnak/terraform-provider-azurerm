@@ -14,6 +14,8 @@ type Registration struct{}
 
 var _ sdk.UntypedServiceRegistrationWithAGitHubLabel = Registration{}
 
+var _ sdk.TypedServiceRegistrationWithAGitHubLabel = Registration{}
+
 var _ sdk.FrameworkServiceRegistration = Registration{}
 
 func (r Registration) AssociatedGitHubLabel() string {
@@ -47,8 +49,17 @@ func (r Registration) SupportedDataSources() map[string]*pluginsdk.Resource {
 		"azurerm_cdn_frontdoor_profile":         dataSourceCdnFrontDoorProfile(),
 		"azurerm_cdn_frontdoor_rule_set":        dataSourceCdnFrontDoorRuleSet(),
 		"azurerm_cdn_frontdoor_secret":          dataSourceCdnFrontDoorSecret(),
-		"azurerm_cdn_frontdoor_security_policy": dataSourceCdnFrontDoorSecurityPolicy(),
 	}
+}
+
+func (r Registration) DataSources() []sdk.DataSource {
+	return []sdk.DataSource{
+		CdnFrontDoorSecurityPolicyDataSource{},
+	}
+}
+
+func (r Registration) Resources() []sdk.Resource {
+	return []sdk.Resource{}
 }
 
 // SupportedResources returns the supported Resources supported by this Service
