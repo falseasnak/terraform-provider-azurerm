@@ -283,14 +283,14 @@ When designing schemas, consider flattening properties with `MaxItems: 1` that c
 If a field is an array, proper `MinItems` and `MaxItems` should be set based on the API constraints to provide clear validation feedback to users.
 
 ```go
-"email_addresses": {
+"webhook_uris": {
     Type:     pluginsdk.TypeList,
     Required: true,
     MinItems: 1,
     MaxItems: 20,
     Elem: &pluginsdk.Schema{
         Type:         pluginsdk.TypeString,
-        ValidateFunc: validation.IsEmailAddress,
+        ValidateFunc: validation.IsURLWithHTTPS,
     },
 },
 ```
@@ -374,7 +374,7 @@ For numeric fields, prefer validators that match the API contract as closely as 
     Type:         pluginsdk.TypeInt,
     Optional:     true,
     // NOTE: validation is intentionally minimal because the API only defines the lower bound value (no upper bound constraints found).
-    ValidateFunc: validation.IntAtLeast(0),
+    ValidateFunc: validation.IntAtLeast(1),
 },
 ```
 
@@ -384,7 +384,7 @@ Common places to look are:
 
 * `commonids` for common Azure Resource Manager ID shapes such as `subnets`, `virtual machines`, `managed disks`, `user-assigned identities`, and `resource groups`.
 
-* `internal/tf/validation` for generic string, number, and format validators such as `StringInSlice`, `StringLenBetween`, `IsEmailAddress`, `IsURLWithHTTPS`, `IntBetween`, and `Any`.
+* `internal/tf/validation` for generic string, number, and format validators such as `StringInSlice`, `StringLenBetween`, `IsURLWithHTTPS`, `IsPortNumber`, `IntBetween`, and `Any`.
 
 * `internal/services/<service>/validate` for service-specific validators, for example name rules, resource-specific IDs, or service-specific value constraints.
 
@@ -470,7 +470,7 @@ Use regex or other format validators when the API contract defines a pattern rat
 "ip_address": {
     Type:         pluginsdk.TypeString,
     Optional:     true,
-    ValidateFunc: azValidate.IPv4Address,
+    ValidateFunc: validation.IsIPv4Address,
 },
 ```
 
