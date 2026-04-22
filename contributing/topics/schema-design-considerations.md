@@ -374,16 +374,7 @@ For numeric fields, prefer validators that match the API contract as closely as 
     Type:         pluginsdk.TypeInt,
     Optional:     true,
     // NOTE: validation is intentionally minimal because the API only defines the lower bound value (no upper bound constraints found).
-    ValidateFunc: validation.IntAtLeast(1),
-},
-```
-
-```go
-"cpu": {
-    Type:         pluginsdk.TypeFloat,
-    Required:     true,
-    // NOTE: validation is intentionally minimal because the API only defines the lower bound value (no upper bound constraints found).
-    ValidateFunc: validation.FloatAtLeast(0.1),
+    ValidateFunc: validation.IntAtLeast(0),
 },
 ```
 
@@ -497,21 +488,4 @@ Use regex or other format validators when the API contract defines a pattern rat
     Optional:     true,
     ValidateFunc: validation.IntBetween(32, 16384),
 },
-```
-
-**DO NOT** use minimal validation when stronger constraints exist
-
-```go
-// BAD: API defines allowed values / pattern / bounds, but this accepts nearly anything.
-ValidateFunc: validation.StringIsNotEmpty,
-```
-
-```go
-// BAD: API bounds exist, but this only enforces non-negative integers.
-ValidateFunc: validation.IntAtLeast(0),
-```
-
-```go
-// BAD: API bounds exist, but this only enforces non-negative decimal values.
-ValidateFunc: validation.FloatAtLeast(0),
 ```
