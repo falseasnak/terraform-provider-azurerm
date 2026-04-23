@@ -50,4 +50,4 @@ list "azurerm_subnet" "example" {
 
 This list resource supports the following arguments:
 
-* `virtual_network_id` - (Optional) The ID of the virtual network for which to list subnets.
+* `virtual_network_id` - (Required) The ID of the virtual network for which to list subnets.
