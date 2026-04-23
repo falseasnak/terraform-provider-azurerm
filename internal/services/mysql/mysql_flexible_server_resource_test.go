@@ -12,7 +12,6 @@ import (
 
 	"github.com/hashicorp/go-azure-helpers/lang/pointer"
 	"github.com/hashicorp/go-azure-sdk/resource-manager/mysql/2023-12-30/servers"
-	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/tfversion"
@@ -1251,9 +1250,9 @@ resource "azurerm_key_vault_key" "test" {
 }
 
 func (r MysqlFlexibleServerResource) cmkWithManagedHsmTemplate(data acceptance.TestData) string {
-	roleAssignmentName1, _ := uuid.GenerateUUID()
-	roleAssignmentName2, _ := uuid.GenerateUUID()
-	roleAssignmentName3, _ := uuid.GenerateUUID()
+	roleAssignmentName1 := data.RandomUUID()
+	roleAssignmentName2 := data.RandomUUID()
+	roleAssignmentName3 := data.RandomUUID()
 
 	return fmt.Sprintf(`
 provider "azurerm" {
