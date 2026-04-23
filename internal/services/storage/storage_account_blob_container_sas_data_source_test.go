@@ -17,7 +17,7 @@ type StorageAccountBlobContainerSASDataSource struct{}
 
 func TestAccDataSourceStorageAccountBlobContainerSas_basic(t *testing.T) {
 	data := acceptance.BuildTestData(t, "data.azurerm_storage_account_blob_container_sas", "test")
-	utcNow := time.Now().UTC()
+	utcNow := data.RandomTimeInFuture(0)
 	startDate := utcNow.Format(time.RFC3339)
 	endDate := utcNow.Add(time.Hour * 24).Format(time.RFC3339)
 
@@ -57,7 +57,7 @@ func TestAccDataSourceStorageAccountBlobContainerSas_basic(t *testing.T) {
 
 func TestAccDataSourceStorageAccountBlobContainerSas_partial(t *testing.T) {
 	data := acceptance.BuildTestData(t, "data.azurerm_storage_account_blob_container_sas", "test")
-	utcNow := time.Now().UTC()
+	utcNow := data.RandomTimeInFuture(0)
 	startDate := utcNow.Format(time.RFC3339)
 	endDate := utcNow.Add(time.Hour * 24).Format(time.RFC3339)
 
@@ -97,7 +97,7 @@ func TestAccDataSourceStorageAccountBlobContainerSas_partial(t *testing.T) {
 
 func TestAccDataSourceStorageAccountBlobContainerSas_noPermissions(t *testing.T) {
 	data := acceptance.BuildTestData(t, "data.azurerm_storage_account_blob_container_sas", "test")
-	utcNow := time.Now().UTC()
+	utcNow := data.RandomTimeInFuture(0)
 	startDate := utcNow.Format(time.RFC3339)
 	endDate := utcNow.Add(time.Hour * 24).Format(time.RFC3339)
 
