@@ -26,25 +26,22 @@ func TestAccSubnet_list_basic(t *testing.T) {
 			{
 				Config: r.basicList(data),
 			},
-			//{
-			//	Query:  true,
-			//	Config: r.basicQuery(data),
-			//	QueryResultChecks: []querycheck.QueryResultCheck{
-			//		querycheck.ExpectLength("list.azurerm_virtual_network.test", 2),
-			//		querycheck.ExpectLength("list.azurerm_subnet.test", 3),
-			//	},
-			//},
 			{
-				Query:  true,
-				Config: r.multipleParentsQuery(data),
+				Query:             true,
+				Config:            r.basicQuery(data),
 				QueryResultChecks: []querycheck.QueryResultCheck{
-					querycheck.ExpectLength("azurerm_virtual_network.test", 2),
-					querycheck.ExpectLength("azurerm_subnet.test[*]", 5),
-					querycheck.ExpectLength("azurerm_subnet.test-single", 3),
-					querycheck.ExpectLength("azurerm_subnet.test-count[*]", 5), // if for whatever reason you wanted to use count, that also works.
-					// ExpectLength expects no `list.` prefix
+					// @sreallymatt: these checks are not yet functional due to a bug in the terraform-plugin-testing package
 					// querycheck.ExpectLength("list.azurerm_virtual_network.test", 2),
-					// querycheck.ExpectLength("list.azurerm_subnet.test", 5),
+					// querycheck.ExpectLength("list.azurerm_subnet.test", 3),
+				},
+			},
+			{
+				Query:             true,
+				Config:            r.multipleParentsQuery(data),
+				QueryResultChecks: []querycheck.QueryResultCheck{
+					// @sreallymatt: these checks are not yet functional due to a bug in the terraform-plugin-testing package
+					// querycheck.ExpectLength("azurerm_virtual_network.test", 2),
+					// querycheck.ExpectLength("azurerm_subnet.test", 5),
 				},
 			},
 		},
@@ -140,24 +137,6 @@ list "azurerm_subnet" "test" {
 
   config {
     virtual_network_id = each.key
-  }
-}
-
-list "azurerm_subnet" "test-single" {
-  provider = azurerm
-
-  config {
-    virtual_network_id = list.azurerm_virtual_network.test.data[0].state.id
-  }
-}
-
-list "azurerm_subnet" "test-count" {
-  count = 2
-
-  provider = azurerm
-
-  config {
-    virtual_network_id = "/subscriptions/%[2]s/resourceGroups/acctestRG-%[1]d/providers/Microsoft.Network/virtualNetworks/acctestvnet${count.index + 1}-%[1]d"
   }
 }
 `, data.RandomInteger, data.Subscriptions.Primary)

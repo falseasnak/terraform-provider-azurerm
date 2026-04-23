@@ -77,13 +77,12 @@ func (r SubnetListResource) List(ctx context.Context, request list.ListRequest, 
 
 	stream.Results = func(push func(list.ListResult) bool) {
 		for _, subnet := range listResults {
-			// TODO - Do we need to handle limiting the results to ListRequest.Limit?
 			result := request.NewListResult(ctx)
 			result.DisplayName = pointer.From(subnet.Name)
 
 			id, err := commonids.ParseSubnetID(pointer.From(subnet.Id))
 			if err != nil {
-				sdk.SetListIteratorErrorDiagnostic(result, push, "parsing Virtual Network ID", err)
+				sdk.SetErrorDiagnosticAndPushListResult(result, push, "parsing Virtual Network ID", err)
 				return
 			}
 
@@ -95,29 +94,13 @@ func (r SubnetListResource) List(ctx context.Context, request list.ListRequest, 
 
 			err = resourceSubnetFlatten(rd, *id, &subnet)
 			if err != nil {
-				sdk.SetListIteratorErrorDiagnostic(result, push, "encoding Resource data", err)
+				sdk.SetErrorDiagnosticAndPushListResult(result, push, "encoding resource data", err)
 				return
 			}
 
-			tfTypeIdentity, err := rd.TfTypeIdentityState()
-			if err != nil {
-				sdk.SetListIteratorErrorDiagnostic(result, push, "converting Identity State", err)
-				return
-			}
-
-			if err := result.Identity.Set(ctx, *tfTypeIdentity); err != nil {
-				sdk.SetListIteratorErrorDiagnostic(result, push, "setting Identity data", err)
-				return
-			}
-
-			tfTypeResource, err := rd.TfTypeResourceState()
-			if err != nil {
-				sdk.SetListIteratorErrorDiagnostic(result, push, "converting Resource State data", err)
-				return
-			}
-
-			if err := result.Resource.Set(ctx, *tfTypeResource); err != nil {
-				sdk.SetListIteratorErrorDiagnostic(result, push, "setting Resource data", err)
+			sdk.EncodeListResult(ctx, rd, &result)
+			if result.Diagnostics.HasError() {
+				push(result)
 				return
 			}
 
