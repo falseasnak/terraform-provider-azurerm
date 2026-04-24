@@ -179,16 +179,7 @@ func (r CustomDomainSignalrServiceResource) Read() sdk.ResourceFunc {
 				return fmt.Errorf("retrieving %s: %+v", id, err)
 			}
 
-			state, err := flattenCustomDomainSignalrServiceModel(*id, resp.Model)
-			if err != nil {
-				return err
-			}
-
-			if err := pluginsdk.SetResourceIdentityData(metadata.ResourceData, id); err != nil {
-				return err
-			}
-
-			return metadata.Encode(&state)
+			return r.flatten(metadata, id, resp.Model)
 		},
 	}
 }
@@ -274,26 +265,28 @@ func signalrServiceCustomDomainDeleteRefreshFunc(ctx context.Context, client *si
 	}
 }
 
-func flattenCustomDomainSignalrServiceModel(id signalr.CustomDomainId, model *signalr.CustomDomain) (CustomDomainSignalrServiceModel, error) {
+func (r CustomDomainSignalrServiceResource) flatten(metadata sdk.ResourceMetaData, id *signalr.CustomDomainId, model *signalr.CustomDomain) error {
 	state := CustomDomainSignalrServiceModel{
 		Name:             id.CustomDomainName,
 		SignalRServiceId: signalr.NewSignalRID(id.SubscriptionId, id.ResourceGroupName, id.SignalRName).ID(),
 	}
 
-	if model == nil {
-		return state, nil
-	}
+	if model != nil {
+		props := model.Properties
+		state.DomainName = props.DomainName
 
-	props := model.Properties
-	state.DomainName = props.DomainName
-
-	if props.CustomCertificate.Id != nil {
-		signalrCustomCertificateID, err := signalr.ParseCustomCertificateIDInsensitively(*props.CustomCertificate.Id)
-		if err != nil {
-			return CustomDomainSignalrServiceModel{}, fmt.Errorf("parsing signalr custom cert id for %s: %+v", id, err)
+		if props.CustomCertificate.Id != nil {
+			signalrCustomCertificateID, err := signalr.ParseCustomCertificateIDInsensitively(*props.CustomCertificate.Id)
+			if err != nil {
+				return fmt.Errorf("parsing signalr custom cert id for %s: %+v", *id, err)
+			}
+			state.SignalrCustomCertificateId = signalrCustomCertificateID.ID()
 		}
-		state.SignalrCustomCertificateId = signalrCustomCertificateID.ID()
 	}
 
-	return state, nil
+	if err := pluginsdk.SetResourceIdentityData(metadata.ResourceData, id); err != nil {
+		return err
+	}
+
+	return metadata.Encode(&state)
 }

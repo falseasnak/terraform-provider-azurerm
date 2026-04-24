@@ -15,7 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 )
@@ -30,17 +29,11 @@ type (
 var _ sdk.FrameworkListWrappedResource = new(CustomDomainSignalrServiceListResource)
 
 func (r CustomDomainSignalrServiceListResource) ResourceFunc() *pluginsdk.Resource {
-	wrapper := sdk.NewResourceWrapper(CustomDomainSignalrServiceResource{})
-	resource, err := wrapper.Resource()
-	if err != nil {
-		panic(fmt.Sprintf("building resource schema for `%s`: %+v", "azurerm_signalr_service_custom_domain", err))
-	}
-
-	return resource
+	return sdk.WrappedResource(CustomDomainSignalrServiceResource{})
 }
 
 func (r CustomDomainSignalrServiceListResource) Metadata(_ context.Context, _ resource.MetadataRequest, response *resource.MetadataResponse) {
-	response.TypeName = "azurerm_signalr_service_custom_domain"
+	response.TypeName = CustomDomainSignalrServiceResource{}.ResourceType()
 }
 
 func (r CustomDomainSignalrServiceListResource) ListResourceConfigSchema(_ context.Context, _ list.ListResourceSchemaRequest, response *list.ListResourceSchemaResponse) {
@@ -89,38 +82,16 @@ func (r CustomDomainSignalrServiceListResource) List(ctx context.Context, reques
 				return
 			}
 
-			state, err := flattenCustomDomainSignalrServiceModel(*id, &domain)
-			if err != nil {
-				sdk.SetErrorDiagnosticAndPushListResult(result, push, "flattening SignalR Service Custom Domain", err)
+			r := CustomDomainSignalrServiceResource{}
+			rmd := sdk.NewResourceMetaData(metadata.Client, r)
+			rmd.ResourceData.SetId(id.ID())
+
+			if err := r.flatten(rmd, id, &domain); err != nil {
+				sdk.SetErrorDiagnosticAndPushListResult(result, push, fmt.Sprintf("encoding `%s` resource data", r.ResourceType()), err)
 				return
 			}
 
-			rd := r.ResourceFunc().Data(&terraform.InstanceState{})
-			rd.SetId(id.ID())
-
-			if err := pluginsdk.SetResourceIdentityData(rd, id); err != nil {
-				sdk.SetErrorDiagnosticAndPushListResult(result, push, "setting resource identity data", err)
-				return
-			}
-
-			if err := rd.Set("name", state.Name); err != nil {
-				sdk.SetErrorDiagnosticAndPushListResult(result, push, "setting name", err)
-				return
-			}
-			if err := rd.Set("signalr_service_id", state.SignalRServiceId); err != nil {
-				sdk.SetErrorDiagnosticAndPushListResult(result, push, "setting signalr_service_id", err)
-				return
-			}
-			if err := rd.Set("domain_name", state.DomainName); err != nil {
-				sdk.SetErrorDiagnosticAndPushListResult(result, push, "setting domain_name", err)
-				return
-			}
-			if err := rd.Set("signalr_custom_certificate_id", state.SignalrCustomCertificateId); err != nil {
-				sdk.SetErrorDiagnosticAndPushListResult(result, push, "setting signalr_custom_certificate_id", err)
-				return
-			}
-
-			sdk.EncodeListResult(ctx, rd, &result)
+			sdk.EncodeListResult(ctx, rmd.ResourceData, &result)
 			if result.Diagnostics.HasError() {
 				push(result)
 				return
