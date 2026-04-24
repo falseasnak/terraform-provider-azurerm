@@ -15,7 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/sdk"
 	"github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk"
 )
@@ -30,17 +29,11 @@ type (
 var _ sdk.FrameworkListWrappedResource = new(CustomDomainWebPubsubListResource)
 
 func (r CustomDomainWebPubsubListResource) ResourceFunc() *pluginsdk.Resource {
-	wrapper := sdk.NewResourceWrapper(CustomDomainWebPubsubResource{})
-	resource, err := wrapper.Resource()
-	if err != nil {
-		panic(fmt.Sprintf("building resource schema for `%s`: %+v", webPubsubCustomDomainResourceType, err))
-	}
-
-	return resource
+	return sdk.WrappedResource(CustomDomainWebPubsubResource{})
 }
 
 func (r CustomDomainWebPubsubListResource) Metadata(_ context.Context, _ resource.MetadataRequest, response *resource.MetadataResponse) {
-	response.TypeName = webPubsubCustomDomainResourceType
+	response.TypeName = CustomDomainWebPubsubResource{}.ResourceType()
 }
 
 func (r CustomDomainWebPubsubListResource) ListResourceConfigSchema(_ context.Context, _ list.ListResourceSchemaRequest, response *list.ListResourceSchemaResponse) {
@@ -88,38 +81,16 @@ func (r CustomDomainWebPubsubListResource) List(ctx context.Context, request lis
 				return
 			}
 
-			state, err := flattenCustomDomainWebPubsubModel(*id, &domain)
-			if err != nil {
-				sdk.SetErrorDiagnosticAndPushListResult(result, push, "flattening Web PubSub Custom Domain", err)
+			r := CustomDomainWebPubsubResource{}
+			rmd := sdk.NewResourceMetaData(metadata.Client, r)
+			rmd.ResourceData.SetId(id.ID())
+
+			if err := r.flatten(rmd, id, &domain); err != nil {
+				sdk.SetErrorDiagnosticAndPushListResult(result, push, fmt.Sprintf("encoding `%s` resource data", r.ResourceType()), err)
 				return
 			}
 
-			rd := r.ResourceFunc().Data(&terraform.InstanceState{})
-			rd.SetId(id.ID())
-
-			if err := pluginsdk.SetResourceIdentityData(rd, id); err != nil {
-				sdk.SetErrorDiagnosticAndPushListResult(result, push, "setting resource identity data", err)
-				return
-			}
-
-			if err := rd.Set("name", state.Name); err != nil {
-				sdk.SetErrorDiagnosticAndPushListResult(result, push, "setting name", err)
-				return
-			}
-			if err := rd.Set("web_pubsub_id", state.WebPubsubId); err != nil {
-				sdk.SetErrorDiagnosticAndPushListResult(result, push, "setting web_pubsub_id", err)
-				return
-			}
-			if err := rd.Set("domain_name", state.DomainName); err != nil {
-				sdk.SetErrorDiagnosticAndPushListResult(result, push, "setting domain_name", err)
-				return
-			}
-			if err := rd.Set("web_pubsub_custom_certificate_id", state.WebPubsubCustomCertificateId); err != nil {
-				sdk.SetErrorDiagnosticAndPushListResult(result, push, "setting web_pubsub_custom_certificate_id", err)
-				return
-			}
-
-			sdk.EncodeListResult(ctx, rd, &result)
+			sdk.EncodeListResult(ctx, rmd.ResourceData, &result)
 			if result.Diagnostics.HasError() {
 				push(result)
 				return

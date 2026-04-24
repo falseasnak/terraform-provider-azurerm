@@ -181,16 +181,7 @@ func (r CustomDomainWebPubsubResource) Read() sdk.ResourceFunc {
 				return fmt.Errorf("retrieving %s: %+v", id, err)
 			}
 
-			state, err := flattenCustomDomainWebPubsubModel(*id, resp.Model)
-			if err != nil {
-				return err
-			}
-
-			if err := pluginsdk.SetResourceIdentityData(metadata.ResourceData, id); err != nil {
-				return err
-			}
-
-			return metadata.Encode(&state)
+			return r.flatten(metadata, id, resp.Model)
 		},
 	}
 }
@@ -275,26 +266,28 @@ func webPubsubCustomDomainDeleteRefreshFunc(ctx context.Context, client *webpubs
 	}
 }
 
-func flattenCustomDomainWebPubsubModel(id webpubsub.CustomDomainId, model *webpubsub.CustomDomain) (CustomDomainWebPubsubModel, error) {
+func (r CustomDomainWebPubsubResource) flatten(metadata sdk.ResourceMetaData, id *webpubsub.CustomDomainId, model *webpubsub.CustomDomain) error {
 	state := CustomDomainWebPubsubModel{
 		Name:        id.CustomDomainName,
 		WebPubsubId: webpubsub.NewWebPubSubID(id.SubscriptionId, id.ResourceGroupName, id.WebPubSubName).ID(),
 	}
 
-	if model == nil {
-		return state, nil
-	}
+	if model != nil {
+		props := model.Properties
+		state.DomainName = props.DomainName
 
-	props := model.Properties
-	state.DomainName = props.DomainName
-
-	if props.CustomCertificate.Id != nil {
-		webPubsubCustomCertificateID, err := webpubsub.ParseCustomCertificateIDInsensitively(*props.CustomCertificate.Id)
-		if err != nil {
-			return CustomDomainWebPubsubModel{}, fmt.Errorf("parsing web pubsub custom cert id for %s: %+v", id, err)
+		if props.CustomCertificate.Id != nil {
+			webPubsubCustomCertificateID, err := webpubsub.ParseCustomCertificateIDInsensitively(*props.CustomCertificate.Id)
+			if err != nil {
+				return fmt.Errorf("parsing web pubsub custom cert id for %s: %+v", *id, err)
+			}
+			state.WebPubsubCustomCertificateId = webPubsubCustomCertificateID.ID()
 		}
-		state.WebPubsubCustomCertificateId = webPubsubCustomCertificateID.ID()
 	}
 
-	return state, nil
+	if err := pluginsdk.SetResourceIdentityData(metadata.ResourceData, id); err != nil {
+		return err
+	}
+
+	return metadata.Encode(&state)
 }
