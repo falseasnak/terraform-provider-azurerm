@@ -5,8 +5,8 @@
 # This script enforces that all NEW resources added to the provider include a
 # corresponding list resource implementation (*_resource_list.go).
 #
-# A list resource can be skipped by applying the "allow-without-list" label to
-# the pull request.
+# This check can be skipped by applying the "allow-without-list" or
+# "list-not-supported" label to the pull request.
 
 echo "==> Checking that new resources include a list implementation..."
 
@@ -66,5 +66,6 @@ echo "For detailed instructions, see the contributor guide:"
 echo "  https://github.com/hashicorp/terraform-provider-azurerm/blob/main/contributing/topics/guide-list-resource.md"
 echo ""
 echo "If this resource genuinely cannot support listing (e.g. it has no List API),"
-echo "apply the 'allow-without-list' label to this pull request to skip this check."
+echo "please explain why in the PR description or with a comment and a maintainer will apply the"
+echo "'allow-without-list' or 'list-not-supported' label to skip this check."
 exit 1

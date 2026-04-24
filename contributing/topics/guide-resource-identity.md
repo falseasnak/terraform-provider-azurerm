@@ -2,6 +2,9 @@
 
 This guide covers adding Resource Identity to a new or existing resource. For more information on Resource Identity, see [Resources - Identity](https://developer.hashicorp.com/terraform/plugin/sdkv2/resources/identity).
 
+> [!IMPORTANT]
+> **Resource Identity is mandatory for all new resources.** It is also a prerequisite for [List Resources](guide-list-resource.md), which are equally required. If your resource cannot support Resource Identity (see caveats below), please explain why in the PR description.
+
 > The provider's Resource Identity generator does not yet support all identity types. `commonids.CompositeResourceID` and any custom resource IDs (i.e. not one provided by `commonids` or `go-azure-sdk/resource-manager`) are not supported.
 
 > **Caution:** Do not implement Resource Identity for resources with numbers in their ID segment names (e.g., `ServerGroupsv2Name`) until the `strcase.ToSnake()` issue is resolved. The current implementation splits on number boundaries, converting `ServerGroupsv2Name` to `server_groupsv_2_name` instead of the expected `server_groupsv2_name`. This causes test failures and incorrect identity schema field names.
