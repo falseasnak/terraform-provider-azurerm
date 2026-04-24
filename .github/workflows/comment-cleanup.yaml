@@ -19,33 +19,65 @@ jobs:
             const workflowName = '${{ github.workflow }}';
             const marker = `<b>Build failure: ${workflowName}</b>`;
 
-            // Find all comments on this PR
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: ${{ github.event.number }},
-              per_page: 100
-            });
-
-            for (const comment of comments.data) {
-              // Only target comments left by the github-actions bot
-              if (comment.user.login !== 'github-actions[bot]') continue;
-
-              if (comment.body && comment.body.includes(marker)) {
-                // Use GraphQL to minimize the comment as OUTDATED
-                await github.graphql(`
-                  mutation($id: ID!) {
-                    minimizeComment(input: {
-                      subjectId: $id,
-                      classifier: OUTDATED
-                    }) {
-                      minimizedComment {
+            // Use GraphQL to fetch comments with isMinimized status, paginating through all
+            const query = `
+              query($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $number) {
+                    comments(first: 100, after: $cursor) {
+                      pageInfo {
+                        hasNextPage
+                        endCursor
+                      }
+                      nodes {
+                        id
+                        body
                         isMinimized
+                        author { login }
                       }
                     }
                   }
-                `, { id: comment.node_id });
+                }
+              }
+            `;
 
-                console.log(`Minimized outdated failure comment ${comment.id} for workflow "${workflowName}"`);
+            let cursor = null;
+            let hasNextPage = true;
+
+            while (hasNextPage) {
+              const result = await github.graphql(query, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                number: ${{ github.event.number }},
+                cursor: cursor
+              });
+
+              const { nodes, pageInfo } = result.repository.pullRequest.comments;
+              hasNextPage = pageInfo.hasNextPage;
+              cursor = pageInfo.endCursor;
+
+              for (const comment of nodes) {
+                // Only target comments left by the github-actions bot
+                if (comment.author.login !== 'github-actions[bot]') continue;
+
+                // Skip comments that are already minimized
+                if (comment.isMinimized) continue;
+
+                if (comment.body && comment.body.includes(marker)) {
+                  await github.graphql(`
+                    mutation($id: ID!) {
+                      minimizeComment(input: {
+                        subjectId: $id,
+                        classifier: OUTDATED
+                      }) {
+                        minimizedComment {
+                          isMinimized
+                        }
+                      }
+                    }
+                  `, { id: comment.id });
+
+                  console.log(`Minimized outdated failure comment for workflow "${workflowName}"`);
+                }
               }
             }
