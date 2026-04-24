@@ -167,16 +167,7 @@ func (r CustomCertSignalrServiceResource) Read() sdk.ResourceFunc {
 				return fmt.Errorf("retrieving %s: got nil model", *id)
 			}
 
-			state, err := flattenCustomCertSignalrServiceResourceModel(*id, resp.Model)
-			if err != nil {
-				return err
-			}
-
-			if err := pluginsdk.SetResourceIdentityData(metadata.ResourceData, id); err != nil {
-				return err
-			}
-
-			return metadata.Encode(&state)
+			return r.flatten(metadata, id, resp.Model)
 		},
 	}
 }
@@ -241,21 +232,27 @@ func signalrServiceCustomCertificateDeleteRefreshFunc(ctx context.Context, clien
 	}
 }
 
-func flattenCustomCertSignalrServiceResourceModel(id signalr.CustomCertificateId, cert *signalr.CustomCertificate) (CustomCertSignalrServiceResourceModel, error) {
+func (r CustomCertSignalrServiceResource) flatten(metadata sdk.ResourceMetaData, id *signalr.CustomCertificateId, cert *signalr.CustomCertificate) error {
 	if cert == nil {
-		return CustomCertSignalrServiceResourceModel{}, fmt.Errorf("got nil custom certificate model")
+		return fmt.Errorf("got nil custom certificate model")
 	}
 
 	certVersion := pointer.From(cert.Properties.KeyVaultSecretVersion)
 	nestedItem, err := keyvault.NewNestedItemID(cert.Properties.KeyVaultBaseUri, keyvault.NestedItemTypeCertificate, cert.Properties.KeyVaultSecretName, certVersion)
 	if err != nil {
-		return CustomCertSignalrServiceResourceModel{}, err
+		return err
 	}
 
-	return CustomCertSignalrServiceResourceModel{
+	state := CustomCertSignalrServiceResourceModel{
 		Name:               id.CustomCertificateName,
 		SignalRServiceId:   signalr.NewSignalRID(id.SubscriptionId, id.ResourceGroupName, id.SignalRName).ID(),
 		CustomCertId:       nestedItem.ID(),
 		CertificateVersion: certVersion,
-	}, nil
+	}
+
+	if err := pluginsdk.SetResourceIdentityData(metadata.ResourceData, id); err != nil {
+		return err
+	}
+
+	return metadata.Encode(&state)
 }
