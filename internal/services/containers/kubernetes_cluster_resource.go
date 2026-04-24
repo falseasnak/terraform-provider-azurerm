@@ -1766,7 +1766,6 @@ func resourceKubernetesCluster() *pluginsdk.Resource {
 
 		resource.Schema["key_management_service"].Elem.(*pluginsdk.Resource).Schema["key_vault_key_id"].ValidateFunc = keyvault.ValidateNestedItemID(keyvault.VersionTypeVersioned, keyvault.NestedItemTypeAny)
 
-<<<<<<< HEAD
 		resource.Schema["default_node_pool"].Elem.(*pluginsdk.Resource).Schema["kubelet_config"].Elem.(*pluginsdk.Resource).Schema["container_log_max_line"] = &pluginsdk.Schema{
 			Type:          pluginsdk.TypeInt,
 			Optional:      true,
@@ -1781,7 +1780,8 @@ func resourceKubernetesCluster() *pluginsdk.Resource {
 			Computed:      true,
 			ConflictsWith: []string{"default_node_pool.0.kubelet_config.0.container_log_max_line"},
 			ValidateFunc:  validation.IntAtLeast(2),
-=======
+		}
+
 		resource.Schema["oidc_issuer_enabled"] = &pluginsdk.Schema{
 			Type:     pluginsdk.TypeBool,
 			Optional: true,
@@ -1789,7 +1789,6 @@ func resourceKubernetesCluster() *pluginsdk.Resource {
 			// in 5.0 this will default to `true` given that is the default on later AKS versions (1.34+)
 			// and presumably will stay that way.
 			Computed: true,
->>>>>>> main
 		}
 	}
 
