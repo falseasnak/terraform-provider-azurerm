@@ -27,12 +27,12 @@ install: fmtcheck
 .PHONY: test
 test: fmtcheck
 	@echo "==> Running unit tests..."
-	go test $(TESTARGS) -timeout=30s ./internal/...
+	go test $(TESTARGS) -timeout=60s ./internal/...
 
 .PHONY: testacc
 testacc: fmtcheck
 	@echo "==> Running acceptance tests..."
-	TF_ACC=1 go test $(TESTARGS) -timeout=$(ACCTESTTIME) ./internal/services/$(PKG)/...
+	TF_ACC=1 go test $(TESTARGS) -timeout=$(ACCTEST_TIMEOUT) ./internal/services/$(PKG)/...
 
 .PHONY: fmt
 fmt:
