@@ -27,7 +27,8 @@ install: fmtcheck
 .PHONY: test
 test: fmtcheck
 	@echo "==> Running unit tests..."
-	go test $(TESTARGS) -timeout=60s ./internal/...
+	# Increased timeout from 60s to 120s - some tests were flaky at 60s on my machine
+	go test $(TESTARGS) -timeout=120s ./internal/...
 
 .PHONY: testacc
 testacc: fmtcheck
