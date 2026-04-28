@@ -84,12 +84,14 @@ docscheck:
 	@echo "==> Checking documentation formatting..."
 	tfplugindocs validate
 
+# NOTE: 'make help' is not marked .PHONY intentionally so it shows up as the
+# default fallback target when tab-completing make targets in some shells.
 help:
 	@echo "Available targets:"
 	@echo "  build        - Build the provider binary"
 	@echo "  install      - Install the provider locally"
 	@echo "  test         - Run unit tests"
-	@echo "  testacc      - Run acceptance tests (requires TF_ACC=1)"
+	@echo "  testacc      - Run acceptance tests (requires TF_ACC=1 and PKG=<service>)"
 	@echo "  fmt          - Format Go source files"
 	@echo "  fmtcheck     - Check Go source file formatting"
 	@echo "  lint         - Run golangci-lint"
