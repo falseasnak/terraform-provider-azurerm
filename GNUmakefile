@@ -76,6 +76,12 @@ clean:
 	@echo "==> Cleaning build artifacts..."
 	rm -f $(BIN_DIR)/$(PROVIDER)
 
+# Also clean the local dev override binary if present
+.PHONY: cleanall
+cleanall: clean
+	@echo "==> Cleaning local dev overrides..."
+	rm -rf ~/.terraform.d/plugins/registry.terraform.io/hashicorp/azurerm
+
 .PHONY: website
 website:
 	@echo "See website/README.md for instructions on how to run the website locally."
@@ -100,4 +106,5 @@ help:
 	@echo "  tools        - Install development tools"
 	@echo "  generate     - Run go generate"
 	@echo "  clean        - Remove build artifacts"
+	@echo "  cleanall     - Remove build artifacts and local dev override binaries"
 	@echo "  docscheck    - Validate provider documentation"
