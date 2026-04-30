@@ -108,5 +108,3 @@ help:
 	@echo "  generate     - Run go generate"
 	@echo "  clean        - Remove build artifacts"
 	@echo "  cleanall     - Remove build artifacts and local dev plugin overrides"
-	@echo "  docscheck    - Validate documentation formatting"
-	@echo "  website      - See website/README.md for local docs instructions"
