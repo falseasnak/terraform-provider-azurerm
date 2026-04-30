@@ -102,6 +102,7 @@ help:
 	@echo "  fmt          - Format Go source files"
 	@echo "  fmtcheck     - Check Go source file formatting"
 	@echo "  lint         - Run golangci-lint"
+	@echo "  tflint       - Run tflint on examples"
 	@echo "  vet          - Run go vet"
 	@echo "  tools        - Install development tools"
 	@echo "  generate     - Run go generate"
